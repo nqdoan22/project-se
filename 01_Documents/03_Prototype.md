@@ -107,3 +107,75 @@ Gồm các mục nhập liệu cần thiết cho QC test
 </body>
 </html>
 ```
+
+## Report nhập hàng
+
+- Hình ảnh
+
+![trang report](./images/report%20prototype.png)
+
+- Source
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        table {
+            border: 1px solid black; /* Border for the entire table */
+            border-collapse: collapse; /* Collapses borders into a single border */
+        }
+
+        th, td {
+            border: 1px solid black; /* Borders for the table cells */
+            padding: 8px; /* Adds space around cell content */
+            text-align: left; /* Aligns text to the left */
+        }
+    </style>
+</head>
+<body>
+    <h1> Inventory imported in 1/2026 </h1>
+    <div style="width: 100%; height: 100%; padding: 3rem; display: flex; flex-direction: row;">
+        <div style="display: flex; flex-direction: column; flex: 1;">
+            <div id="div1" style="padding: 2rem; margin: 1rem; display: flex; flex-direction: column; border-style: solid; border-width: 0.3rem; border-color: blue; background-color: lightblue;">
+                <h3> Lots imported </h3>
+                <p style="font-size: xx-large;"> 200 </p>
+                <div style="width: 100%; display: flex; align-items: center;">
+                    <h3> with <p style="font-size: x-large; display: inline;"> 25 </p> different materials imported </h3>
+                </div>
+            </div>
+
+            <div id="div3" style="min-width: 50%; padding: 2rem; margin: 1rem; display: flex; flex-direction: column; border-style: solid; border-width: 0.3rem; border-color: blue; background-color: lightblue;">
+                <h3> Quality control </h3>
+                <img src="./qc pie example.png" width="100%" height="auto"/>
+            </div>
+        </div>
+
+        <div id="div2" style="flex: 1; padding: 2rem; margin: 1rem; display: flex; flex-direction: column; overflow-y: scroll; border-style: solid; border-width: 0.3rem; border-color: blue; background-color: lightblue;">
+            <h3> Import quantities </h3>
+            <table>
+                <tr>
+                  <td><b>Apples</b></td>
+                  <td style="font-size: large;">100 kg</td>
+                </tr>
+                <tr>
+                  <td><b>Oranges</b></td>
+                  <td style="font-size: large;">400 kg</td>
+                </tr>
+                <tr>
+                  <td><b>Berry mix</b></td>
+                  <td style="font-size: large;">60 l</td>
+                </tr>
+            </table>
+            <div style="width: 100%; display: flex; align-items: center; gap: 3rem"> <a href=""> View more </a> </div>
+        </div> 
+    </div>
+</body>
+</html>
+```
