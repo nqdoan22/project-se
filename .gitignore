@@ -1,3 +1,6 @@
 .DS_Store
 02_Source/01_Source Code/backend/build
 02_Source/01_Source Code/backend/.gradle
+
+.idea/
+*.iml
