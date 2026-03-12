@@ -47,7 +47,7 @@ public class QCTestController {
             @Valid @RequestBody QCTestRequest req,
             @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(qcTestService.createTest(req, jwt.getClaimAsString("preferred_username")));
+            .body(qcTestService.createTest(req, jwt != null ? jwt.getClaimAsString("preferred_username") : null));
     }
 
     @PutMapping("/{id}")

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import keycloak from '../auth/keycloak';
 
 const API_BASE = 'http://localhost:8080/api/v1';
 
@@ -6,6 +7,27 @@ const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
 });
+
+// Request interceptor — attach token
+api.interceptors.request.use((config) => {
+  if (keycloak.token) {
+    config.headers.Authorization = `Bearer ${keycloak.token}`;
+  }
+  return config;
+});
+
+// Response interceptor — refresh token on 401
+api.interceptors.response.use(
+  (res) => res,
+  async (err) => {
+    if (err.response?.status === 401) {
+      await keycloak.updateToken(30);
+      err.config.headers.Authorization = `Bearer ${keycloak.token}`;
+      return api(err.config);
+    }
+    return Promise.reject(err);
+  }
+);
 
 // ─── Materials ────────────────────────────────────────────────────────────────
 export const materialApi = {

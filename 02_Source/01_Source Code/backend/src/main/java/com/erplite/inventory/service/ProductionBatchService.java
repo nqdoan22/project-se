@@ -67,7 +67,7 @@ public class ProductionBatchService {
             .unitOfMeasure(req.getUnitOfMeasure())
             .manufactureDate(req.getManufactureDate())
             .expirationDate(req.getExpirationDate())
-            .status(BatchStatus.IN_PROGRESS)
+            .status(BatchStatus.PLANNED)
             .build();
         return BatchResponse.from(batchRepository.save(batch), false);
     }

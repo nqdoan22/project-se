@@ -50,7 +50,7 @@ public class ProductionBatchController {
             @PathVariable String id,
             @Valid @RequestBody BatchStatusRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getPerformedBy() == null) {
+        if (req.getPerformedBy() == null && jwt != null) {
             req.setPerformedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.ok(batchService.updateBatchStatus(id, req));
@@ -62,7 +62,7 @@ public class ProductionBatchController {
             @PathVariable String id,
             @Valid @RequestBody BatchComponentRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getAddedBy() == null) {
+        if (req.getAddedBy() == null && jwt != null) {
             req.setAddedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(batchService.addComponent(id, req));
@@ -74,7 +74,7 @@ public class ProductionBatchController {
             @PathVariable String componentId,
             @Valid @RequestBody ComponentConfirmRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getPerformedBy() == null) {
+        if (req.getPerformedBy() == null && jwt != null) {
             req.setPerformedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.ok(batchService.confirmComponent(componentId, req));

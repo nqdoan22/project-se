@@ -48,7 +48,7 @@ public class InventoryLotController {
     public ResponseEntity<LotResponse> receiveLot(
             @Valid @RequestBody LotReceiveRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getPerformedBy() == null) {
+        if (req.getPerformedBy() == null && jwt != null) {
             req.setPerformedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(lotService.receiveLot(req));
@@ -60,7 +60,7 @@ public class InventoryLotController {
             @PathVariable String id,
             @Valid @RequestBody LotStatusUpdateRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getPerformedBy() == null) {
+        if (req.getPerformedBy() == null && jwt != null) {
             req.setPerformedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.ok(lotService.updateLotStatus(id, req));
@@ -72,7 +72,7 @@ public class InventoryLotController {
             @PathVariable String id,
             @Valid @RequestBody LotSplitRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getPerformedBy() == null) {
+        if (req.getPerformedBy() == null && jwt != null) {
             req.setPerformedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(lotService.splitLot(id, req));
@@ -84,7 +84,7 @@ public class InventoryLotController {
             @PathVariable String id,
             @Valid @RequestBody LotAdjustRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getPerformedBy() == null) {
+        if (req.getPerformedBy() == null && jwt != null) {
             req.setPerformedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.ok(lotService.adjustLot(id, req));
@@ -96,7 +96,7 @@ public class InventoryLotController {
             @PathVariable String id,
             @Valid @RequestBody LotTransferRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getPerformedBy() == null) {
+        if (req.getPerformedBy() == null && jwt != null) {
             req.setPerformedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.ok(lotService.transferLot(id, req));
@@ -108,7 +108,7 @@ public class InventoryLotController {
             @PathVariable String id,
             @Valid @RequestBody LotDisposeRequest req,
             @AuthenticationPrincipal Jwt jwt) {
-        if (req.getPerformedBy() == null) {
+        if (req.getPerformedBy() == null && jwt != null) {
             req.setPerformedBy(jwt.getClaimAsString("preferred_username"));
         }
         return ResponseEntity.ok(lotService.disposeLot(id, req));
