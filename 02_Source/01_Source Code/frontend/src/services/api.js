@@ -21,9 +21,16 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     if (err.response?.status === 401) {
-      await keycloak.updateToken(30);
-      err.config.headers.Authorization = `Bearer ${keycloak.token}`;
-      return api(err.config);
+      if (keycloak.authenticated) {
+        try {
+          await keycloak.updateToken(30);
+          err.config.headers.Authorization = `Bearer ${keycloak.token}`;
+          return api(err.config);
+        } catch {
+          // token refresh failed, reject
+        }
+      }
+      return Promise.reject(err);
     }
     return Promise.reject(err);
   }

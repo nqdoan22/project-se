@@ -1,4 +1,6 @@
 .DS_Store
+.env
+**/.env
 02_Source/01_Source Code/backend/bin
 02_Source/01_Source Code/backend/build
 02_Source/01_Source Code/backend/.gradle

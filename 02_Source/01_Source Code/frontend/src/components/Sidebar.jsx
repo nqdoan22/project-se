@@ -61,12 +61,16 @@ export default function Sidebar() {
         ))}
       </nav>
       <div style={{ padding: '16px', borderTop: '1px solid var(--border)' }}>
-        <span className="text-muted" style={{ fontSize: 13 }}>
-          {keycloak.tokenParsed?.preferred_username}
-        </span>
-        <button className="btn btn-outline btn-sm" onClick={() => keycloak.logout()}>
-          Logout
-        </button>
+        {keycloak.authenticated && (
+          <>
+            <span className="text-muted" style={{ fontSize: 13 }}>
+              {keycloak.tokenParsed?.preferred_username}
+            </span>
+            <button className="btn btn-outline btn-sm" onClick={() => keycloak.logout()}>
+              Logout
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );
