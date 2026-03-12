@@ -1,6 +1,8 @@
 .DS_Store
+02_Source/01_Source Code/backend/bin
 02_Source/01_Source Code/backend/build
 02_Source/01_Source Code/backend/.gradle
-
-.idea/
-*.iml
+.vscode/settings.json
+POC/backend/bin
+POC/backend/build
+POC/backend/.gradle

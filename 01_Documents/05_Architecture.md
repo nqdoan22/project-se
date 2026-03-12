@@ -57,3 +57,19 @@ backend/
 │   ├── application.yml     # Database & Keycloak properties
 │   └── mapper/             # (Optional) MyBatis or SQL templates
 └── pom.xml                 # Dependencies (Spring Security, MySQL, etc.)
+
+## Technology stack
+
+### Backend
+- **Framework**: Java Spring Framework v4.0.2
+- **Build Tool**: Gradle
+- **Database**: MySQL
+- **Authentication**: Keycloak
+
+### Frontend
+- **Build Tool**: Vite v7.2.4 or higher
+- **Framework**: React v19.2.0 or higher
+- **State Management**: @tanstack/react-query v5.90.21 or higher
+- **HTTP Client**: Axios v1.13.6 or higher
+- **Styling**: Tailwind CSS
+- **Authentication**: Keycloak integration

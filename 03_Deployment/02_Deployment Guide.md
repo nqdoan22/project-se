@@ -60,5 +60,7 @@
      ```
    - Follow the prompts to complete the deployment.
 
+Alternatively, go to Vercel's home page, create a new project and choose to deploy from a connected Github repository.
+
 3. **Access the Frontend**:
    - Once deployed, Vercel will provide a URL for your frontend application. Share this URL with your users.
