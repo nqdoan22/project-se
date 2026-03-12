@@ -1,8 +1,7 @@
 # 10 – Build Guide: Material Management Module
 
-**Hệ thống:** Inventory Management System (IMS)  
-**Phiên bản:** 1.0  
-**Ngày tạo:** 06/03/2026  
+**Hệ thống:** Inventory Management System (IMS)
+**Phiên bản:** 1.1 (cập nhật 12/03/2026 — đồng bộ theo `dbscript.sql`)
 **Tập trung:** Module Quản lý Vật tư (Material Management) — Epic E1 & E2
 
 ---
@@ -12,12 +11,14 @@
 Module Material Management là **nền tảng** của toàn bộ hệ thống. Mọi hoạt động (nhập kho, sản xuất, QC…) đều phụ thuộc vào master data của Materials.
 
 **Phạm vi:**
+
 - CRUD nguyên vật liệu (Materials)
 - Quản lý Inventory Lot (nhập kho, trạng thái lot)
 - Ghi lịch sử giao dịch (InventoryTransactions)
 - Tìm kiếm, lọc danh sách
 
 **Stack hiện tại:**
+
 - Backend: Java Spring Boot, JPA/Hibernate, MySQL (`inventory_management`)
 - Package gốc: `com.erplite.inventory`
 - Frontend: React + Tailwind (chưa triển khai)
@@ -51,47 +52,54 @@ CREATE DATABASE IF NOT EXISTS inventory_management
 
 ```sql
 -- Bảng Materials (master data vật tư)
-CREATE TABLE materials (
-    material_id   VARCHAR(36)  PRIMARY KEY,
-    part_number   VARCHAR(50)  NOT NULL UNIQUE,
-    material_name VARCHAR(200) NOT NULL,
-    material_type ENUM('API','Excipient','Packaging','Product','Other') NOT NULL,
-    storage_conditions    VARCHAR(255),
-    specification_document VARCHAR(500),
-    created_date  DATETIME DEFAULT CURRENT_TIMESTAMP,
-    modified_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+CREATE TABLE Materials (
+    material_id            VARCHAR(20)  PRIMARY KEY,
+    part_number            VARCHAR(20)  NOT NULL UNIQUE,
+    material_name          VARCHAR(100) NOT NULL,
+    material_type          ENUM('API', 'Excipient', 'Dietary Supplement', 'Container', 'Closure', 'Process Chemical', 'Testing Material') NOT NULL,
+    storage_conditions     VARCHAR(100) NULL,
+    specification_document VARCHAR(50)  NULL,
+    created_date           DATETIME DEFAULT CURRENT_TIMESTAMP,
+    modified_date          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Bảng InventoryLots (tồn kho theo lô)
-CREATE TABLE inventory_lots (
-    lot_id           VARCHAR(36)  PRIMARY KEY,
-    material_id      VARCHAR(36)  NOT NULL,
-    manufacturer_lot VARCHAR(100),
-    quantity         DECIMAL(15,3) NOT NULL DEFAULT 0,
-    unit_of_measure  VARCHAR(20)  NOT NULL,
-    status           ENUM('Quarantine','Accepted','Rejected','Depleted') NOT NULL DEFAULT 'Quarantine',
-    received_date    DATE,
-    expiration_date  DATE,
-    storage_location VARCHAR(100),
-    is_sample        BOOLEAN DEFAULT FALSE,
-    parent_lot_id    VARCHAR(36),
-    created_date     DATETIME DEFAULT CURRENT_TIMESTAMP,
-    modified_date    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (material_id)   REFERENCES materials(material_id),
-    FOREIGN KEY (parent_lot_id) REFERENCES inventory_lots(lot_id)
+CREATE TABLE InventoryLots (
+    lot_id                 VARCHAR(36)   PRIMARY KEY,
+    material_id            VARCHAR(20)   NOT NULL,
+    manufacturer_name      VARCHAR(100)  NOT NULL,
+    manufacturer_lot       VARCHAR(50)   NOT NULL,
+    supplier_name          VARCHAR(100)  NULL,
+    received_date          DATE          NOT NULL,
+    expiration_date        DATE          NOT NULL,
+    in_use_expiration_date DATE          NULL,
+    status                 ENUM('Quarantine', 'Accepted', 'Rejected', 'Depleted') NOT NULL,
+    quantity               DECIMAL(10,3) NOT NULL,
+    unit_of_measure        VARCHAR(10)   NOT NULL,
+    storage_location       VARCHAR(50)   NULL,
+    is_sample              BOOLEAN       DEFAULT FALSE,
+    parent_lot_id          VARCHAR(36)   NULL,
+    po_number              VARCHAR(30)   NULL,
+    receiving_form_id      VARCHAR(50)   NULL,
+    created_date           DATETIME DEFAULT CURRENT_TIMESTAMP,
+    modified_date          DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_lots_material FOREIGN KEY (material_id)   REFERENCES Materials(material_id),
+    CONSTRAINT fk_lots_parent   FOREIGN KEY (parent_lot_id) REFERENCES InventoryLots(lot_id)
 );
 
 -- Bảng InventoryTransactions (lịch sử giao dịch)
-CREATE TABLE inventory_transactions (
+CREATE TABLE InventoryTransactions (
     transaction_id   VARCHAR(36)   PRIMARY KEY,
     lot_id           VARCHAR(36)   NOT NULL,
-    transaction_type ENUM('Receipt','Usage','Split','Transfer','Adjustment','Disposal') NOT NULL,
-    quantity         DECIMAL(15,3) NOT NULL,
-    transaction_date DATETIME      DEFAULT CURRENT_TIMESTAMP,
-    reference_id     VARCHAR(100),
-    notes            VARCHAR(500),
-    performed_by     VARCHAR(50),
-    FOREIGN KEY (lot_id) REFERENCES inventory_lots(lot_id)
+    transaction_type ENUM('Receipt', 'Usage', 'Split', 'Transfer', 'Adjustment', 'Disposal') NOT NULL,
+    quantity         DECIMAL(10,3) NOT NULL,
+    unit_of_measure  VARCHAR(10)   NOT NULL,
+    reference_id     VARCHAR(50)   NULL,
+    notes            TEXT          NULL,
+    performed_by     VARCHAR(50)   NOT NULL,
+    transaction_date DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_date     DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_txn_lot FOREIGN KEY (lot_id) REFERENCES InventoryLots(lot_id)
 );
 ```
 
@@ -141,10 +149,10 @@ public class Material {
     @Column(name = "material_type", nullable = false)
     private MaterialType materialType;
 
-    @Column(name = "storage_conditions")
+    @Column(name = "storage_conditions", length = 100)
     private String storageConditions;
 
-    @Column(name = "specification_document", length = 500)
+    @Column(name = "specification_document", length = 50)
     private String specificationDocument;
 
     @Column(name = "created_date", updatable = false)
@@ -162,7 +170,9 @@ public class Material {
     @PreUpdate
     protected void onUpdate() { modifiedDate = LocalDateTime.now(); }
 
-    public enum MaterialType { API, Excipient, Packaging, Product, Other }
+    public enum MaterialType {
+        API, Excipient, Dietary_Supplement, Container, Closure, Process_Chemical, Testing_Material
+    }
 }
 ```
 
@@ -180,7 +190,7 @@ import lombok.Data;
 public class MaterialDTO {
     private String partNumber;
     private String materialName;
-    private MaterialType materialType;
+    private MaterialType materialType;  // API / Excipient / Dietary_Supplement / Container / Closure / Process_Chemical / Testing_Material
     private String storageConditions;
     private String specificationDocument;
 }
@@ -213,14 +223,14 @@ public interface MaterialRepository extends JpaRepository<Material, String> {
 
 Các method cần implement:
 
-| Method | Mô tả |
-|--------|-------|
-| `List<Material> getAllMaterials()` | Lấy tất cả vật tư |
-| `Optional<Material> getMaterialById(String id)` | Lấy theo ID |
-| `List<Material> searchMaterials(String keyword, MaterialType type)` | Tìm kiếm + lọc |
-| `Material createMaterial(MaterialDTO dto)` | Tạo mới, check `partNumber` unique |
-| `Material updateMaterial(String id, MaterialDTO dto)` | Cập nhật |
-| `void deleteMaterial(String id)` | Xoá (nếu chưa có lot liên kết) |
+| Method                                                              | Mô tả                              |
+| ------------------------------------------------------------------- | ---------------------------------- |
+| `List<Material> getAllMaterials()`                                  | Lấy tất cả vật tư                  |
+| `Optional<Material> getMaterialById(String id)`                     | Lấy theo ID                        |
+| `List<Material> searchMaterials(String keyword, MaterialType type)` | Tìm kiếm + lọc                     |
+| `Material createMaterial(MaterialDTO dto)`                          | Tạo mới, check `partNumber` unique |
+| `Material updateMaterial(String id, MaterialDTO dto)`               | Cập nhật                           |
+| `void deleteMaterial(String id)`                                    | Xoá (nếu chưa có lot liên kết)     |
 
 > ⚠️ **Validation:** Không cho xoá Material nếu đã có InventoryLot liên kết.
 
@@ -228,13 +238,13 @@ Các method cần implement:
 
 **Vị trí:** `src/main/java/com/erplite/inventory/controller/MaterialController.java`
 
-| HTTP Method | Endpoint | Chức năng |
-|------------|----------|-----------|
-| `GET` | `/api/materials` | Lấy danh sách (hỗ trợ query param `?keyword=&type=`) |
-| `GET` | `/api/materials/{id}` | Lấy chi tiết theo ID |
-| `POST` | `/api/materials` | Tạo material mới |
-| `PUT` | `/api/materials/{id}` | Cập nhật material |
-| `DELETE` | `/api/materials/{id}` | Xoá material |
+| HTTP Method | Endpoint              | Chức năng                                            |
+| ----------- | --------------------- | ---------------------------------------------------- |
+| `GET`       | `/api/materials`      | Lấy danh sách (hỗ trợ query param `?keyword=&type=`) |
+| `GET`       | `/api/materials/{id}` | Lấy chi tiết theo ID                                 |
+| `POST`      | `/api/materials`      | Tạo material mới                                     |
+| `PUT`       | `/api/materials/{id}` | Cập nhật material                                    |
+| `DELETE`    | `/api/materials/{id}` | Xoá material                                         |
 
 ### 2.6 Kiểm thử API (Material)
 
@@ -265,6 +275,7 @@ curl -X DELETE http://localhost:8080/api/materials/MAT-001
 **Vị trí:** `src/main/java/com/erplite/inventory/entity/InventoryLot.java`
 
 Fields cần có:
+
 - `lotId` (UUID, PK)
 - `material` (`@ManyToOne` → `Material`)
 - `manufacturerLot`, `quantity`, `unitOfMeasure`
@@ -278,6 +289,7 @@ Fields cần có:
 **Vị trí:** `src/main/java/com/erplite/inventory/entity/InventoryTransaction.java`
 
 Fields cần có:
+
 - `transactionId` (UUID, PK)
 - `lot` (`@ManyToOne` → `InventoryLot`)
 - `transactionType` (`TransactionType` enum: `Receipt`, `Usage`, `Split`, `Transfer`, `Adjustment`, `Disposal`)
@@ -286,16 +298,17 @@ Fields cần có:
 
 ### 3.3 Tạo Service: `InventoryLotService.java`
 
-| Method | Logic nghiệp vụ |
-|--------|----------------|
-| `receiveNewLot(dto)` | Tạo lot (status=Quarantine) + ghi Receipt transaction (+qty) |
-| `getLotsByMaterial(materialId)` | Lấy lot theo material |
-| `getLotsByStatus(status)` | Lọc theo trạng thái |
-| `updateLotStatus(lotId, newStatus)` | Cập nhật status + ghi Status Change transaction |
-| `deductQuantity(lotId, qty, refId, performedBy)` | Trừ tồn + ghi Usage transaction; nếu qty=0 → Depleted |
-| `splitSampleLot(parentLotId, sampleQty)` | Tạo sample lot (is_sample=true) + ghi Split transaction |
+| Method                                           | Logic nghiệp vụ                                              |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `receiveNewLot(dto)`                             | Tạo lot (status=Quarantine) + ghi Receipt transaction (+qty) |
+| `getLotsByMaterial(materialId)`                  | Lấy lot theo material                                        |
+| `getLotsByStatus(status)`                        | Lọc theo trạng thái                                          |
+| `updateLotStatus(lotId, newStatus)`              | Cập nhật status + ghi Status Change transaction              |
+| `deductQuantity(lotId, qty, refId, performedBy)` | Trừ tồn + ghi Usage transaction; nếu qty=0 → Depleted        |
+| `splitSampleLot(parentLotId, sampleQty)`         | Tạo sample lot (is_sample=true) + ghi Split transaction      |
 
 > **Business rule quan trọng:**
+>
 > - Không Usage nếu `status ≠ Accepted`
 > - Không Usage nếu `quantity < required`
 > - Không Usage nếu `expirationDate < today`
@@ -303,14 +316,14 @@ Fields cần có:
 
 ### 3.4 Tạo Controller: `InventoryLotController.java`
 
-| HTTP Method | Endpoint | Chức năng |
-|------------|----------|-----------|
-| `GET` | `/api/lots` | Danh sách lot (filter: status, materialId, nearExpiry) |
-| `GET` | `/api/lots/{id}` | Chi tiết lot |
-| `POST` | `/api/lots/receive` | Nhập kho (tạo lot mới) |
-| `PATCH` | `/api/lots/{id}/status` | Cập nhật status |
-| `POST` | `/api/lots/{id}/split` | Tách sample lot |
-| `GET` | `/api/lots/{id}/transactions` | Lịch sử giao dịch của lot |
+| HTTP Method | Endpoint                      | Chức năng                                              |
+| ----------- | ----------------------------- | ------------------------------------------------------ |
+| `GET`       | `/api/lots`                   | Danh sách lot (filter: status, materialId, nearExpiry) |
+| `GET`       | `/api/lots/{id}`              | Chi tiết lot                                           |
+| `POST`      | `/api/lots/receive`           | Nhập kho (tạo lot mới)                                 |
+| `PATCH`     | `/api/lots/{id}/status`       | Cập nhật status                                        |
+| `POST`      | `/api/lots/{id}/split`        | Tách sample lot                                        |
+| `GET`       | `/api/lots/{id}/transactions` | Lịch sử giao dịch của lot                              |
 
 ---
 
@@ -334,19 +347,20 @@ src/features/material/
 ### 4.2 Xây dựng `materialApi.js`
 
 ```js
-import axios from 'axios';
-const BASE = 'http://localhost:8080/api/materials';
+import axios from "axios";
+const BASE = "http://localhost:8080/api/materials";
 
 export const getAllMaterials = (params) => axios.get(BASE, { params });
-export const getMaterialById = (id)    => axios.get(`${BASE}/${id}`);
-export const createMaterial  = (data)  => axios.post(BASE, data);
-export const updateMaterial  = (id, data) => axios.put(`${BASE}/${id}`, data);
-export const deleteMaterial  = (id)    => axios.delete(`${BASE}/${id}`);
+export const getMaterialById = (id) => axios.get(`${BASE}/${id}`);
+export const createMaterial = (data) => axios.post(BASE, data);
+export const updateMaterial = (id, data) => axios.put(`${BASE}/${id}`, data);
+export const deleteMaterial = (id) => axios.delete(`${BASE}/${id}`);
 ```
 
 ### 4.3 Xây dựng `MaterialListPage.jsx`
 
 Tính năng:
+
 - Hiển thị bảng `MaterialTable` với cột: Part Number, Name, Type, Storage, Actions
 - Tích hợp `MaterialFilter` (lọc theo type, tìm theo keyword)
 - Nút **"+ Thêm vật tư"** mở modal `MaterialForm`
@@ -359,9 +373,9 @@ Fields trong form:
 |-------|-----------|-----------|
 | Part Number | Text | Required, unique |
 | Material Name | Text | Required |
-| Material Type | Select (`API`, `Excipient`, `Packaging`, `Product`, `Other`) | Required |
+| Material Type | Select (`API`, `Excipient`, `Dietary Supplement`, `Container`, `Closure`, `Process Chemical`, `Testing Material`) | Required |
 | Storage Conditions | Textarea | Optional |
-| Specification Document | Text (URL/path) | Optional |
+| Specification Document | Text (mã hoặc link) | Optional |
 
 ### 4.5 Routing
 
@@ -395,6 +409,7 @@ src/features/inventory/
 ### 5.2 Xây dựng `ReceiveLotForm.jsx`
 
 Form nhập kho cần có:
+
 - Chọn Material (dropdown từ `/api/materials`)
 - Manufacturer Lot number
 - Quantity + Unit of Measure
@@ -406,12 +421,12 @@ Form nhập kho cần có:
 
 ### 5.3 Hiển thị `LotStatusBadge`
 
-| Status | Màu badge |
-|--------|-----------|
-| Quarantine | 🟡 Vàng |
-| Accepted | 🟢 Xanh lá |
-| Rejected | 🔴 Đỏ |
-| Depleted | ⚫ Xám |
+| Status     | Màu badge  |
+| ---------- | ---------- |
+| Quarantine | 🟡 Vàng    |
+| Accepted   | 🟢 Xanh lá |
+| Rejected   | 🔴 Đỏ      |
+| Depleted   | ⚫ Xám     |
 
 ---
 

@@ -1,4 +1,12 @@
-## 1. Tổng quan luồng (workflow) theo quan hệ bảng:
+# 01 – Product Requirements Document
+
+**Hệ thống:** Inventory Management System (IMS)
+**Phiên bản:** 1.1
+**Ngày cập nhật:** 12/03/2026
+
+---
+
+## 1. Tổng quan luồng (Workflow)
 
 ```
 flowchart LR
@@ -7,6 +15,7 @@ flowchart LR
   M[Materials]:::t -->|1:N material_id| L[InventoryLots]:::t
   L -->|1:N lot_id| T[InventoryTransactions]:::t
   L -->|1:N lot_id| QC[QCTests]:::t
+  L -->|self-ref parent_lot_id| L
 
   M -->|1:N product_id| PB[ProductionBatches]:::t
   PB -->|1:N batch_id| BC[BatchComponents]:::t
@@ -18,201 +27,304 @@ flowchart LR
 classDef t fill:#f7f7f7,stroke:#333,stroke-width:1px;
 ```
 
-## 2.“Bảng nào có dữ liệu gì” (những cột quan trọng theo workflow)
+---
 
-### A. Users (người thực hiện thao tác)
+## 2. Mô tả từng bảng (Schema Reference)
 
-- Dùng để điền các trường audit như performed_by, added_by, verified_by.
-- Các cột chính: user_id, username, email, password, role, is_active, last_login, created_date, modified_date.
+### A. Users
 
-### B. Materials (master data vật tư / sản phẩm)
+Lưu thông tin người dùng hệ thống. Dùng để kiểm soát truy cập (RBAC) và điền các trường audit.
 
-- Là “gốc” để tạo lot và cũng là “product” cho batch (thông qua product_id).
-- Cột chính: material_id, part_number, material_name, material_type, storage_conditions, specification_document, created_date, modified_date.
+| Cột             | Kiểu                | Ghi chú                                                                   |
+| --------------- | ------------------- | ------------------------------------------------------------------------- |
+| `user_id`       | VARCHAR(36) PK      | UUID                                                                      |
+| `username`      | VARCHAR(50) UNIQUE  | Tên đăng nhập                                                             |
+| `email`         | VARCHAR(100) UNIQUE | Email                                                                     |
+| `password`      | VARCHAR(100)        | BCrypt hash                                                               |
+| `role`          | ENUM                | `Admin` / `InventoryManager` / `QualityControl` / `Production` / `Viewer` |
+| `is_active`     | BOOLEAN             | Tài khoản còn hiệu lực                                                    |
+| `last_login`    | DATETIME NULL       | Lần đăng nhập cuối                                                        |
+| `created_date`  | DATETIME            | Auto                                                                      |
+| `modified_date` | DATETIME            | Auto ON UPDATE                                                            |
 
-### C. InventoryLots (tồn kho theo lô)
+---
 
-- Đại diện cho “một lần nhập” hoặc “một lô vật tư”: có status, quantity, ngày nhận/hết hạn…
-- Các trường quan trọng theo biến động:
-  - status: Quarantine / Accepted / Rejected / Depleted
-  - quantity: số lượng hiện tại (bị tăng/giảm theo transaction)
-  - is_sample + parent_lot_id: phục vụ tách sample từ lot gốc
+### B. Materials
 
-### D. InventoryTransactions (lịch sử tăng/giảm theo lot)
+Master data vật tư / sản phẩm. Là "gốc" để tạo `InventoryLot` và cũng là `product_id` trong `ProductionBatches`.
 
-- Ghi nhận movement: Receipt / Usage / Split / Transfer / Adjustment / Disposal
-- Trường quan trọng:
-  - transaction_type
-  - quantity (dương/âm tuỳ loại)
-  - lot_id
-  - reference_id (VD batch_number / order…)
-  - performed_by (ai làm)
-  - transaction_date
+| Cột                      | Kiểu               | Ghi chú                                                                                                        |
+| ------------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `material_id`            | VARCHAR(20) PK     | VD: `MAT-001`                                                                                                  |
+| `part_number`            | VARCHAR(20) UNIQUE | Mã phần                                                                                                        |
+| `material_name`          | VARCHAR(100)       | Tên vật tư                                                                                                     |
+| `material_type`          | ENUM               | `API` / `Excipient` / `Dietary Supplement` / `Container` / `Closure` / `Process Chemical` / `Testing Material` |
+| `storage_conditions`     | VARCHAR(100) NULL  | Điều kiện bảo quản                                                                                             |
+| `specification_document` | VARCHAR(50) NULL   | Mã/link tài liệu kỹ thuật                                                                                      |
+| `created_date`           | DATETIME           | Auto                                                                                                           |
+| `modified_date`          | DATETIME           | Auto ON UPDATE                                                                                                 |
 
-### E. QCTests (kết quả kiểm nghiệm cho lot)
+---
 
-- Gắn theo lot_id, nhiều record cho 1 lot.
-- Quan trọng nhất:
-  - test_type, test_method, test_date
-  - result_status: Pass / Fail / Pending
-  - performed_by, verified_by
+### C. LabelTemplates
 
-### F. ProductionBatches (đợt sản xuất)
+Lưu template in nhãn (không phải log nhãn đã in). Nhãn được tạo bằng cách chọn `label_type` phù hợp và populate `template_content` bằng dữ liệu thực tế.
 
-- Có status: Planned / In Progress / Complete / Rejected
-- Liên kết sản phẩm qua product_id trỏ sang Materials.
-- Trường chính: batch_id, product_id, batch_number, batch_size, unit_of_measure, manufacture_date, expiration_date, status.
+| Cột                | Kiểu           | Ghi chú                                                                            |
+| ------------------ | -------------- | ---------------------------------------------------------------------------------- |
+| `template_id`      | VARCHAR(20) PK | VD: `TPL-RM-01`                                                                    |
+| `template_name`    | VARCHAR(100)   | Tên template                                                                       |
+| `label_type`       | ENUM           | `Raw Material` / `Sample` / `Intermediate` / `Finished Product` / `API` / `Status` |
+| `template_content` | TEXT           | HTML với placeholder `{{field}}`                                                   |
+| `width`            | DECIMAL(5,2)   | Chiều rộng nhãn (cm)                                                               |
+| `height`           | DECIMAL(5,2)   | Chiều cao nhãn (cm)                                                                |
+| `created_date`     | DATETIME       | Auto                                                                               |
+| `modified_date`    | DATETIME       | Auto ON UPDATE                                                                     |
 
-### G. BatchComponents (định mức & thực tế nguyên liệu dùng cho batch)
+---
 
-- Link batch ↔ lot, có planned_quantity và actual_quantity.
-- Khi có actual usage, sẽ “trigger” InventoryTransaction Usage âm trên lot tương ứng (theo example flow).
+### D. InventoryLots
 
-### H. LabelTemplates (template in nhãn)
+Đại diện cho "một lần nhập" hoặc "một lô vật tư". Đây là bảng biến động mạnh nhất trong hệ thống.
 
-- Lưu template (không phải log nhãn đã in).
-- Nhãn được tạo bằng cách chọn label_type phù hợp và “populate” template_content bằng dữ liệu từ InventoryLot hoặc ProductionBatch.
+| Cột                      | Kiểu                       | Ghi chú                                             |
+| ------------------------ | -------------------------- | --------------------------------------------------- |
+| `lot_id`                 | VARCHAR(36) PK             | UUID                                                |
+| `material_id`            | VARCHAR(20) FK → Materials |                                                     |
+| `manufacturer_name`      | VARCHAR(100)               | Nhà sản xuất                                        |
+| `manufacturer_lot`       | VARCHAR(50)                | Số lô của nhà sản xuất                              |
+| `supplier_name`          | VARCHAR(100) NULL          | Nhà cung cấp                                        |
+| `received_date`          | DATE                       | Ngày nhận hàng                                      |
+| `expiration_date`        | DATE                       | Ngày hết hạn                                        |
+| `in_use_expiration_date` | DATE NULL                  | Hạn dùng sau khi mở                                 |
+| `status`                 | ENUM                       | `Quarantine` / `Accepted` / `Rejected` / `Depleted` |
+| `quantity`               | DECIMAL(10,3)              | Số lượng hiện tại                                   |
+| `unit_of_measure`        | VARCHAR(10)                | Đơn vị (kg, pcs, L…)                                |
+| `storage_location`       | VARCHAR(50) NULL           | Vị trí kho                                          |
+| `is_sample`              | BOOLEAN                    | TRUE nếu là sample lot                              |
+| `parent_lot_id`          | VARCHAR(36) NULL FK → self | Lot cha (chỉ dùng khi `is_sample = TRUE`)           |
+| `po_number`              | VARCHAR(30) NULL           | Purchase Order number                               |
+| `receiving_form_id`      | VARCHAR(50) NULL           | Mã phiếu nhận hàng                                  |
+| `created_date`           | DATETIME                   | Auto                                                |
+| `modified_date`          | DATETIME                   | Auto ON UPDATE                                      |
 
-## 3.Workflow chi tiết theo từng bước (và “giá trị nào đổi như thế nào”)
+---
 
-- Bước 0 — User đăng nhập (chuẩn bị audit)
-  - Bảng ảnh hưởng: Users
-  - Khi user login: có thể cập nhật last_login (nullable → timestamp).
-  - Sau này mọi thao tác sẽ ghi performed_by/added_by/verified_by.
-  - Giá trị thay đổi:
-    Users.last_login: NULL → 2025-01-29 14:30:00 (ví dụ trong tài liệu).
-- Bước 1 — Tạo Material (master data)
-  - Bảng tạo mới: Materials  
-    Ví dụ: tạo MAT-001 (Vitamin D3 100K).
-  - Giá trị thay đổi  
-    Tạo 1 dòng mới trong Materials:
-    - material_id = MAT-001
-    - material_type = API (ví dụ)
-    - created_date/modified_date = NOW
-- Bước 2 — Nhập kho: tạo InventoryLot + ghi Receipt transaction
-  - Theo tài liệu: nhận lot lot-uuid-001 cho MAT-001 với 25.5 kg và tạo InventoryTransaction loại Receipt +25.5.  
-    Bảng tạo mới
-    - InventoryLots (tạo 1 dòng mới)
-    - lot_id = lot-uuid-001
-    - material_id = MAT-001
-    - status: thường bắt đầu ở Quarantine (vì có QC sau đó mới Accepted)
-    - quantity = 25.500
-    - unit_of_measure = kg
-    - received_date, expiration_date, …
-    - InventoryTransactions (tạo 1 dòng mới)
-    - transaction_type = Receipt
-    - quantity = +25.500
-    - lot_id = lot-uuid-001
-    - performed_by = jdoe (ví dụ)
-  - Giá trị thay đổi
-    - InventoryLots.quantity: 0 → 25.500
-    - InventoryLots.status: (khởi tạo) Quarantine
-    - InventoryTransactions: thêm record Receipt
-- Bước 3 — In nhãn Raw Material (không tạo bảng mới, chỉ “generate”)
-  - Tài liệu mô tả: dùng LabelTemplate TPL-RM-01 loại Raw Material, populate template bằng dữ liệu của lot.
-  - Bảng đọc dữ liệu
-    - LabelTemplates: chọn theo label_type = Raw Material (có template_content, width/height).
-    - InventoryLots + Materials: lấy field để đổ vào template (material_name, lot_id, manufacturer_lot, expiration_date, storage_location…).
-  - Giá trị thay đổi
-    - Không bắt buộc thay đổi DB (schema không có bảng “PrintedLabels/LabelRuns”). Chỉ là hành vi “generate + print”.
-- Bước 4 — QC cho lot: tạo QCTests, và cập nhật status của lot theo kết quả
-  - Tài liệu: tạo QC test (Identity, Potency) cho lot-uuid-001; khi tất cả Pass → lot.status = Accepted.
-  - Bảng tạo mới
-    - QCTests: tạo 1..n record cho lot_id = lot-uuid-001:
-    - test_type (Identity/Potency/…)
-    - result_status (Pending → Pass/Fail)
-    - performed_by, verified_by
-  - Giá trị thay đổi  
-    Trong QCTests:
-    - result_status: Pending → Pass (hoặc Fail)
+### E. InventoryTransactions
 
-    Trong InventoryLots:
-    - status: Quarantine → Accepted khi “all pass”
+Ghi nhận toàn bộ lịch sử tăng/giảm của từng lot (audit trail đầy đủ).
 
-  (Trường hợp fail: Rejected; trường hợp hết hàng: Depleted)
+| Cột                | Kiểu                           | Ghi chú                                                                |
+| ------------------ | ------------------------------ | ---------------------------------------------------------------------- |
+| `transaction_id`   | VARCHAR(36) PK                 | UUID                                                                   |
+| `lot_id`           | VARCHAR(36) FK → InventoryLots |                                                                        |
+| `transaction_type` | ENUM                           | `Receipt` / `Usage` / `Split` / `Transfer` / `Adjustment` / `Disposal` |
+| `quantity`         | DECIMAL(10,3)                  | Dương (nhập) hoặc âm (xuất)                                            |
+| `unit_of_measure`  | VARCHAR(10)                    | Đơn vị                                                                 |
+| `reference_id`     | VARCHAR(50) NULL               | VD: batch_number, RF number, lot_id đối tác                            |
+| `notes`            | TEXT NULL                      | Ghi chú tự do                                                          |
+| `performed_by`     | VARCHAR(50)                    | Username thực hiện                                                     |
+| `transaction_date` | DATETIME                       | Thời điểm giao dịch                                                    |
+| `created_date`     | DATETIME                       | Auto                                                                   |
 
-- Bước 5 — Tạo sample lot từ lot gốc (nếu có)
-  - Tài liệu: nếu tạo sample lot từ lot-uuid-001 với is_sample: true thì in nhãn Sample, có thông tin parent lot, sample date…
-  - Bảng tạo mới / thay đổi
-    - InventoryLots:
-      - Tạo lot mới (sample lot):
-        - is_sample = true
-        - parent_lot_id = lot-uuid-001
-        - quantity = sample_qty
-    - InventoryTransactions (thường sẽ có để cân tồn)
-      - Gợi ý theo schema transaction_type = Split để tách từ lot cha sang lot con (schema có Split).
-      - Lot cha: ghi Split -sample_qty
-      - Lot con: ghi Receipt/Split +sample_qty (tuỳ rule bạn thiết kế; schema cho phép Split và Receipt)
-  - Giá trị thay đổi (điển hình)
-    - Lot cha (lot-uuid-001): quantity giảm theo sample
-    - Lot con (sample): quantity tăng tương ứng
-    - In nhãn Sample: chọn LabelTemplate label_type = Sample
+---
 
-- Bước 6 — Tạo ProductionBatch cho sản phẩm (product là 1 Material)
-  - Tài liệu: tạo batch-uuid-001 cho PROD-001 (một Material).
-  - Bảng tạo mới
-    - ProductionBatches:
-      - product_id = PROD-001 (FK → Materials)
-      - batch_number, batch_size, manufacture_date, expiration_date
-      - status khởi tạo: Planned (theo enum)
-  - Giá trị thay đổi
-    - Tạo 1 dòng mới; về sau status thường chuyển:
-      - Planned → In Progress → Complete (hoặc Rejected)
+### F. ProductionBatches
 
-- Bước 7 — Add nguyên liệu vào batch: BatchComponents + trừ tồn bằng Usage transaction
-  - Tài liệu: BatchComponent link batch-uuid-001 ↔ lot-uuid-001 planned/actual 2 kg, và trigger InventoryTransaction Usage -2kg trên lot đó.
-  - Bảng tạo mới / thay đổi
-    - BatchComponents (tạo mới)
-      - batch_id = batch-uuid-001
-      - lot_id = lot-uuid-001
-      - planned_quantity = 2.000
-      - actual_quantity = 2.000 (có thể ban đầu NULL rồi cập nhật sau)
-      - addition_date, added_by
-    - InventoryTransactions (tạo mới)
-      - transaction_type = Usage
-      - quantity = -2.000
-      - reference_id có thể là batch_number/batch_id (schema cho phép)
-      - performed_by = user thao tác
-    - InventoryLots (update)
-      - quantity: 25.500 → 23.500 (trừ 2.000)
-      - Nếu về 0 thì status có thể chuyển Depleted (enum có).
+Đợt sản xuất. `product_id` trỏ sang `Materials` (sản phẩm là một loại vật tư kiểu `Dietary Supplement` hoặc `API`).
 
-- Bước 8 — Hoàn tất batch: cập nhật status + in nhãn Finished Product
-  - Tài liệu: khi batch-uuid-001.status đổi sang Complete thì in nhãn Finished Product, populate bằng batch data (batch_number, product_name, manufacture_date, expiration_date, batch_size…).
-  - Bảng thay đổi
-    - ProductionBatches.status: In Progress → Complete
-  - Bảng đọc để in nhãn
-    - LabelTemplates chọn label_type = Finished Product
-    - ProductionBatches + Materials (để lấy product_name/material_name)
+| Cột                | Kiểu                       | Ghi chú                                             |
+| ------------------ | -------------------------- | --------------------------------------------------- |
+| `batch_id`         | VARCHAR(36) PK             | UUID                                                |
+| `product_id`       | VARCHAR(20) FK → Materials | Sản phẩm được sản xuất                              |
+| `batch_number`     | VARCHAR(50) UNIQUE         | VD: `BATCH-2026-001`                                |
+| `batch_size`       | DECIMAL(10,3)              | Quy mô lô sản xuất                                  |
+| `unit_of_measure`  | VARCHAR(10)                | Đơn vị                                              |
+| `manufacture_date` | DATE                       | Ngày sản xuất                                       |
+| `expiration_date`  | DATE                       | Ngày hết hạn thành phẩm                             |
+| `status`           | ENUM                       | `Planned` / `In Progress` / `Complete` / `Rejected` |
+| `created_date`     | DATETIME                   | Auto                                                |
+| `modified_date`    | DATETIME                   | Auto ON UPDATE                                      |
 
-- Bước 9 — Khi status lot/batch đổi: có thể in nhãn Status
-  - Tài liệu nói: nếu kết quả QC làm đổi trạng thái lot thì có thể generate nhãn Status để dán physical lot.
-  - Chi tiết label generation: status label xuất hiện khi lot/batch status đổi (vd Quarantine → Accepted).
+---
 
-## 4. "Bảng biến động" (chốt lại: bước nào làm thay đổi field nào)
+### G. BatchComponents
+
+Liên kết batch ↔ lot; ghi định mức (planned) và thực tế (actual) nguyên liệu tiêu thụ.
+
+| Cột                | Kiểu                               | Ghi chú                             |
+| ------------------ | ---------------------------------- | ----------------------------------- |
+| `component_id`     | VARCHAR(36) PK                     | UUID                                |
+| `batch_id`         | VARCHAR(36) FK → ProductionBatches |                                     |
+| `lot_id`           | VARCHAR(36) FK → InventoryLots     |                                     |
+| `planned_quantity` | DECIMAL(10,3)                      | Định mức kế hoạch                   |
+| `actual_quantity`  | DECIMAL(10,3) NULL                 | Thực tế (NULL cho đến khi xác nhận) |
+| `unit_of_measure`  | VARCHAR(10)                        | Đơn vị                              |
+| `addition_date`    | DATETIME NULL                      | Thời điểm thêm vào batch            |
+| `added_by`         | VARCHAR(50) NULL                   | Username thêm                       |
+| `created_date`     | DATETIME                           | Auto                                |
+| `modified_date`    | DATETIME                           | Auto ON UPDATE                      |
+
+---
+
+### H. QCTests
+
+Kết quả kiểm nghiệm chất lượng cho từng lot. Một lot có thể có nhiều records.
+
+| Cột                   | Kiểu                           | Ghi chú                                                                             |
+| --------------------- | ------------------------------ | ----------------------------------------------------------------------------------- |
+| `test_id`             | VARCHAR(36) PK                 | UUID                                                                                |
+| `lot_id`              | VARCHAR(36) FK → InventoryLots |                                                                                     |
+| `test_type`           | ENUM                           | `Identity` / `Potency` / `Microbial` / `Growth Promotion` / `Physical` / `Chemical` |
+| `test_method`         | VARCHAR(100)                   | VD: `HPLC-UV`, `USP <61>`                                                           |
+| `test_date`           | DATE                           | Ngày thực hiện                                                                      |
+| `test_result`         | VARCHAR(100)                   | Kết quả thực tế                                                                     |
+| `acceptance_criteria` | VARCHAR(200) NULL              | Tiêu chí chấp nhận                                                                  |
+| `result_status`       | ENUM                           | `Pass` / `Fail` / `Pending`                                                         |
+| `performed_by`        | VARCHAR(50)                    | Người thực hiện                                                                     |
+| `verified_by`         | VARCHAR(50) NULL               | Người duyệt kết quả                                                                 |
+| `created_date`        | DATETIME                       | Auto                                                                                |
+| `modified_date`       | DATETIME                       | Auto ON UPDATE                                                                      |
+
+---
+
+## 3. Workflow chi tiết theo từng bước
+
+### Bước 0 — User đăng nhập
+
+| Bảng    | Field        | Thay đổi                     |
+| ------- | ------------ | ---------------------------- |
+| `Users` | `last_login` | `NULL` → timestamp đăng nhập |
+
+Sau khi đăng nhập, mọi thao tác tiếp theo sẽ ghi `performed_by` / `added_by` / `verified_by` bằng `username` của user đó.
+
+---
+
+### Bước 1 — Tạo Material (master data)
+
+| Bảng        | Hành động         |
+| ----------- | ----------------- |
+| `Materials` | INSERT 1 dòng mới |
+
+**Ví dụ:** Tạo `MAT-001` – _Vitamin D3 100,000 IU/g_, `material_type = API`, bảo quản 2–8°C, `specification_document = SPEC-MAT-001`.
+
+---
+
+### Bước 2 — Nhập kho: tạo InventoryLot + ghi Receipt transaction
+
+| Bảng                    | Hành động         | Giá trị thay đổi                                   |
+| ----------------------- | ----------------- | -------------------------------------------------- |
+| `InventoryLots`         | INSERT 1 dòng mới | `status = Quarantine`, `quantity = +25.500`        |
+| `InventoryTransactions` | INSERT 1 record   | `transaction_type = Receipt`, `quantity = +25.500` |
+
+**Bắt buộc khi tạo lot:** `manufacturer_name`, `manufacturer_lot`, `received_date`, `expiration_date`, `quantity`, `unit_of_measure`.
+**Tuỳ chọn:** `supplier_name`, `storage_location`, `po_number`, `receiving_form_id`, `in_use_expiration_date`.
+
+---
+
+### Bước 3 — In nhãn Raw Material (không thay đổi DB)
+
+| Bảng đọc                      | Mục đích                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `LabelTemplates`              | Chọn template `label_type = Raw Material` (lấy `template_content`, `width`, `height`)                              |
+| `InventoryLots` + `Materials` | Populate placeholder: `{{materialName}}`, `{{manufacturerLot}}`, `{{expirationDate}}`, `{{storageLocation}}`, v.v. |
+
+> Schema không có bảng log nhãn đã in — đây là hành động "generate + print" thuần tuý, không ghi DB.
+
+---
+
+### Bước 4 — QC cho lot: tạo QCTests, cập nhật lot.status
+
+| Bảng            | Hành động                         | Giá trị thay đổi                                             |
+| --------------- | --------------------------------- | ------------------------------------------------------------ |
+| `QCTests`       | INSERT 1–n records cho `lot_id`   | `result_status = Pending` ban đầu                            |
+| `QCTests`       | UPDATE từng record khi có kết quả | `result_status`: `Pending → Pass` hoặc `Fail`                |
+| `InventoryLots` | UPDATE `status`                   | `Quarantine → Accepted` (all Pass) hoặc `Rejected` (có Fail) |
+
+---
+
+### Bước 5 — Tạo Sample lot từ lot gốc
+
+| Bảng                      | Hành động        | Giá trị thay đổi                                                            |
+| ------------------------- | ---------------- | --------------------------------------------------------------------------- |
+| `InventoryLots`           | INSERT lot con   | `is_sample = TRUE`, `parent_lot_id = <lot_cha_id>`, `quantity = sample_qty` |
+| `InventoryTransactions`   | INSERT 2 records | Lot cha: `Split` `−sample_qty` · Lot con: `Split` `+sample_qty`             |
+| `InventoryLots` (lot cha) | UPDATE           | `quantity` giảm theo `sample_qty`                                           |
+
+**In nhãn Sample:** Dùng `LabelTemplate` với `label_type = Sample`; populate `{{parentLotId}}`, `{{quantity}}`, `{{expirationDate}}`, v.v.
+
+---
+
+### Bước 6 — Tạo ProductionBatch
+
+| Bảng                | Hành động         | Giá trị thay đổi   |
+| ------------------- | ----------------- | ------------------ |
+| `ProductionBatches` | INSERT 1 dòng mới | `status = Planned` |
+
+`product_id` phải là `material_id` hợp lệ trong `Materials`.
+
+---
+
+### Bước 7 — Thêm nguyên liệu vào batch + Usage transaction
+
+| Bảng                    | Hành động           | Giá trị thay đổi                                                                         |
+| ----------------------- | ------------------- | ---------------------------------------------------------------------------------------- |
+| `BatchComponents`       | INSERT mới          | `planned_quantity` đặt ngay; `actual_quantity = NULL`                                    |
+| `BatchComponents`       | UPDATE khi xác nhận | `actual_quantity = <giá trị thực>`                                                       |
+| `InventoryTransactions` | INSERT              | `transaction_type = Usage`, `quantity = −actual_quantity`, `reference_id = batch_number` |
+| `InventoryLots`         | UPDATE              | `quantity` giảm; nếu về `0` → `status = Depleted`                                        |
+
+> **Ràng buộc:** Chỉ cho phép Usage nếu lot có `status = Accepted` và `quantity ≥ actual_quantity`.
+
+---
+
+### Bước 8 — Hoàn tất batch + in nhãn Finished Product
+
+| Bảng                | Hành động | Giá trị thay đổi                   |
+| ------------------- | --------- | ---------------------------------- |
+| `ProductionBatches` | UPDATE    | `status`: `In Progress → Complete` |
+
+**In nhãn Finished Product:** Dùng `LabelTemplate` với `label_type = Finished Product`; populate bằng dữ liệu từ `ProductionBatches` + `Materials`.
+
+---
+
+### Bước 9 — In nhãn Status khi lot đổi trạng thái
+
+Khi QC làm thay đổi `status` của lot (VD: `Quarantine → Accepted` hoặc `→ Rejected`), hệ thống generate nhãn Status để dán vào lô vật lý.
+
+**Dùng:** `LabelTemplate` với `label_type = Status`; populate `{{status}}`, `{{lotId}}`, `{{materialName}}`, `{{statusDate}}`.
+
+---
+
+## 4. Bảng biến động — Tổng kết
 
 ### A. InventoryLots (biến động mạnh nhất)
 
-- quantity thay đổi khi có InventoryTransactions (Receipt/Usage/Split/…)
-- status thay đổi theo QC & tình trạng tồn:
-  - Quarantine → Accepted khi QC pass hết
-  - Rejected nếu fail
-  - Depleted nếu quantity về 0
-- is_sample, parent_lot_id thay đổi khi tạo sample lot
+| Field                        | Thay đổi khi nào                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------- |
+| `quantity`                   | Receipt (+), Usage (−), Split (±), Adjustment (±), Disposal (−)                              |
+| `status`                     | `Quarantine → Accepted` (QC all pass) · `→ Rejected` (QC fail) · `→ Depleted` (quantity = 0) |
+| `storage_location`           | Transaction `Transfer`                                                                       |
+| `is_sample`, `parent_lot_id` | Tạo sample lot                                                                               |
 
 ### B. BatchComponents
 
-- planned_quantity thường set ngay khi plan
-- actual_quantity có thể:
-  - NULL lúc tạo → cập nhật sau khi cân/đong thực tế
-  - Khi actual_quantity được xác nhận, hệ thống tạo InventoryTransactions(Usage -actual) theo example flow.
+| Field              | Thay đổi khi nào                                                           |
+| ------------------ | -------------------------------------------------------------------------- |
+| `planned_quantity` | Set khi plan batch                                                         |
+| `actual_quantity`  | `NULL → giá trị thực` khi xác nhận; kích hoạt InventoryTransaction `Usage` |
 
 ### C. ProductionBatches
 
-- status: Planned → In Progress → Complete/Rejected
-- Khi status = Complete → in nhãn Finished Product.
+| Chuyển trạng thái        | Điều kiện                                  |
+| ------------------------ | ------------------------------------------ |
+| `Planned → In Progress`  | Bắt đầu sản xuất                           |
+| `In Progress → Complete` | Hoàn tất; trigger in nhãn Finished Product |
+| `In Progress → Rejected` | Lô bị từ chối                              |
 
 ### D. QCTests
 
-- result_status: Pending → Pass/Fail
-- Có thể dùng verified_by để "duyệt" kết quả.
+| Field           | Thay đổi khi nào                     |
+| --------------- | ------------------------------------ |
+| `result_status` | `Pending → Pass/Fail` khi có kết quả |
+| `verified_by`   | Khi supervisor duyệt kết quả         |

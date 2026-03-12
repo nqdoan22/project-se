@@ -1,7 +1,7 @@
 # 12 – Backend API Specification
 
 **System:** Inventory Management System (IMS)
-**Version:** 1.0
+**Version:** 1.1 (cập nhật 12/03/2026 — đồng bộ theo `dbscript.sql`)
 **Date:** 10/03/2026
 **Base URL:** `http://localhost:8080` (development) · `https://api.your-domain.com` (production)
 
@@ -35,47 +35,49 @@
 
 All endpoints are prefixed with `/api/v1`. The existing codebase uses `/api/` without versioning — this spec adopts `/api/v1/` for all new and refactored endpoints going forward.
 
-| Segment | Example | Description |
-|---------|---------|-------------|
-| `/api/v1` | `/api/v1` | Fixed prefix + version |
-| `{module}` | `materials`, `lots`, `batches` | Module/resource collection |
-| `{id}` | `/{uuid}` | Specific resource identifier (UUID) |
-| `{sub}` | `/transactions`, `/components` | Sub-resource collection |
+| Segment    | Example                        | Description                         |
+| ---------- | ------------------------------ | ----------------------------------- |
+| `/api/v1`  | `/api/v1`                      | Fixed prefix + version              |
+| `{module}` | `materials`, `lots`, `batches` | Module/resource collection          |
+| `{id}`     | `/{uuid}`                      | Specific resource identifier (UUID) |
+| `{sub}`    | `/transactions`, `/components` | Sub-resource collection             |
 
 ### 1.2 HTTP Methods
 
-| Method | Semantics |
-|--------|-----------|
-| `GET` | Read — idempotent, no side effects |
-| `POST` | Create a new resource |
-| `PUT` | Full replacement of an existing resource |
-| `PATCH` | Partial update (status transitions, single-field changes) |
-| `DELETE` | Remove a resource (hard or soft delete) |
+| Method   | Semantics                                                 |
+| -------- | --------------------------------------------------------- |
+| `GET`    | Read — idempotent, no side effects                        |
+| `POST`   | Create a new resource                                     |
+| `PUT`    | Full replacement of an existing resource                  |
+| `PATCH`  | Partial update (status transitions, single-field changes) |
+| `DELETE` | Remove a resource (hard or soft delete)                   |
 
 ### 1.3 Date & Number Formats
 
-| Type | Format | Example |
-|------|--------|---------|
-| Date | `YYYY-MM-DD` (ISO 8601) | `"2026-03-10"` |
-| DateTime | `YYYY-MM-DDTHH:mm:ss` (ISO 8601, UTC) | `"2026-03-10T14:30:00"` |
-| Decimal | JSON number with up to 3 decimal places | `25.500` |
-| UUID | RFC 4122 lowercase hyphenated string | `"a1b2c3d4-..."` |
+| Type     | Format                                  | Example                 |
+| -------- | --------------------------------------- | ----------------------- |
+| Date     | `YYYY-MM-DD` (ISO 8601)                 | `"2026-03-10"`          |
+| DateTime | `YYYY-MM-DDTHH:mm:ss` (ISO 8601, UTC)   | `"2026-03-10T14:30:00"` |
+| Decimal  | JSON number with up to 3 decimal places | `25.500`                |
+| UUID     | RFC 4122 lowercase hyphenated string    | `"a1b2c3d4-..."`        |
 
 ### 1.4 Pagination (list endpoints)
 
 All collection endpoints support optional pagination via query parameters:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `page` | integer | `0` | Zero-based page index |
-| `size` | integer | `20` | Items per page (max 100) |
-| `sort` | string | `createdDate,desc` | Field + direction |
+| Parameter | Type    | Default            | Description              |
+| --------- | ------- | ------------------ | ------------------------ |
+| `page`    | integer | `0`                | Zero-based page index    |
+| `size`    | integer | `20`               | Items per page (max 100) |
+| `sort`    | string  | `createdDate,desc` | Field + direction        |
 
 **Paginated response wrapper:**
 
 ```json
 {
-  "content": [ /* array of items */ ],
+  "content": [
+    /* array of items */
+  ],
   "page": 0,
   "size": 20,
   "totalElements": 42,
@@ -153,31 +155,31 @@ Authorization: Bearer <access_token>
 
 The backend extracts the following claims from the JWT:
 
-| Claim | Description | Example |
-|-------|-------------|---------|
-| `sub` | User UUID (maps to `Users.user_id`) | `"a1b2-..."` |
-| `preferred_username` | Username (used as `performed_by`) | `"jdoe"` |
-| `email` | User email | `"j.doe@company.com"` |
-| `realm_access.roles` | Array of Keycloak realm roles | `["InventoryManager"]` |
+| Claim                | Description                         | Example                |
+| -------------------- | ----------------------------------- | ---------------------- |
+| `sub`                | User UUID (maps to `Users.user_id`) | `"a1b2-..."`           |
+| `preferred_username` | Username (used as `performed_by`)   | `"jdoe"`               |
+| `email`              | User email                          | `"j.doe@company.com"`  |
+| `realm_access.roles` | Array of Keycloak realm roles       | `["InventoryManager"]` |
 
 ### 2.6 User Roles
 
-| Role | Description |
-|------|-------------|
-| `Admin` | Full access to all modules including user management |
+| Role               | Description                                          |
+| ------------------ | ---------------------------------------------------- |
+| `Admin`            | Full access to all modules including user management |
 | `InventoryManager` | Manage materials, receive lots, perform transactions |
-| `QualityControl` | Create and record QC tests, update lot status via QC |
-| `Production` | Plan and manage production batches |
-| `Viewer` | Read-only access to all non-sensitive data |
+| `QualityControl`   | Create and record QC tests, update lot status via QC |
+| `Production`       | Plan and manage production batches                   |
+| `Viewer`           | Read-only access to all non-sensitive data           |
 
 ### 2.7 Error Responses for Auth Failures
 
-| Scenario | HTTP Code | Error Body |
-|----------|-----------|------------|
-| No token provided | `401 Unauthorized` | `{ "error": "Unauthorized", "message": "Authentication required" }` |
-| Expired token | `401 Unauthorized` | `{ "error": "Unauthorized", "message": "Token expired" }` |
-| Invalid/tampered token | `401 Unauthorized` | `{ "error": "Unauthorized", "message": "Invalid token" }` |
-| Role insufficient | `403 Forbidden` | `{ "error": "Forbidden", "message": "Insufficient permissions" }` |
+| Scenario               | HTTP Code          | Error Body                                                          |
+| ---------------------- | ------------------ | ------------------------------------------------------------------- |
+| No token provided      | `401 Unauthorized` | `{ "error": "Unauthorized", "message": "Authentication required" }` |
+| Expired token          | `401 Unauthorized` | `{ "error": "Unauthorized", "message": "Token expired" }`           |
+| Invalid/tampered token | `401 Unauthorized` | `{ "error": "Unauthorized", "message": "Invalid token" }`           |
+| Role insufficient      | `403 Forbidden`    | `{ "error": "Forbidden", "message": "Insufficient permissions" }`   |
 
 ---
 
@@ -210,18 +212,18 @@ All errors follow a consistent envelope:
 
 ### Standard HTTP Status Codes
 
-| Code | Meaning | When Used |
-|------|---------|-----------|
-| `200 OK` | Success | GET, PUT, PATCH |
-| `201 Created` | Resource created | POST |
-| `204 No Content` | Success, no body | DELETE |
-| `400 Bad Request` | Invalid input / business rule violation | Business exceptions |
-| `401 Unauthorized` | Not authenticated | Missing/expired JWT |
-| `403 Forbidden` | Not authorized | Wrong role |
-| `404 Not Found` | Resource does not exist | `ResourceNotFoundException` |
-| `409 Conflict` | Duplicate unique field | Duplicate part_number, batch_number |
-| `422 Unprocessable Entity` | Bean validation failed | `@NotBlank`, `@Size` violations |
-| `500 Internal Server Error` | Unexpected failure | Unhandled exceptions |
+| Code                        | Meaning                                 | When Used                           |
+| --------------------------- | --------------------------------------- | ----------------------------------- |
+| `200 OK`                    | Success                                 | GET, PUT, PATCH                     |
+| `201 Created`               | Resource created                        | POST                                |
+| `204 No Content`            | Success, no body                        | DELETE                              |
+| `400 Bad Request`           | Invalid input / business rule violation | Business exceptions                 |
+| `401 Unauthorized`          | Not authenticated                       | Missing/expired JWT                 |
+| `403 Forbidden`             | Not authorized                          | Wrong role                          |
+| `404 Not Found`             | Resource does not exist                 | `ResourceNotFoundException`         |
+| `409 Conflict`              | Duplicate unique field                  | Duplicate part_number, batch_number |
+| `422 Unprocessable Entity`  | Bean validation failed                  | `@NotBlank`, `@Size` violations     |
+| `500 Internal Server Error` | Unexpected failure                      | Unhandled exceptions                |
 
 ---
 
@@ -241,13 +243,13 @@ Materials are the master catalog of all raw ingredients, APIs, excipients, and p
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `keyword` | string | No | Search by `materialName` (case-insensitive contains) |
-| `type` | enum | No | Filter by `materialType`. Values: `API`, `Excipient`, `Packaging`, `Product`, `Other` |
-| `page` | integer | No | Default `0` |
-| `size` | integer | No | Default `20` |
-| `sort` | string | No | Default `createdDate,desc` |
+| Parameter | Type    | Required | Description                                                                                                                                |
+| --------- | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `keyword` | string  | No       | Search by `materialName` (case-insensitive contains)                                                                                       |
+| `type`    | enum    | No       | Filter by `materialType`. Values: `API`, `Excipient`, `Dietary Supplement`, `Container`, `Closure`, `Process Chemical`, `Testing Material` |
+| `page`    | integer | No       | Default `0`                                                                                                                                |
+| `size`    | integer | No       | Default `20`                                                                                                                               |
+| `sort`    | string  | No       | Default `createdDate,desc`                                                                                                                 |
 
 **Response `200 OK`:**
 
@@ -282,9 +284,9 @@ Materials are the master catalog of all raw ingredients, APIs, excipients, and p
 
 **Path Parameters:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `id` | UUID | Material UUID |
+| Parameter | Type | Description   |
+| --------- | ---- | ------------- |
+| `id`      | UUID | Material UUID |
 
 **Response `200 OK`:**
 
@@ -303,8 +305,8 @@ Materials are the master catalog of all raw ingredients, APIs, excipients, and p
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition          | Code  | Message                              |
+| ------------------ | ----- | ------------------------------------ |
 | Material not found | `404` | `"Material not found with id: {id}"` |
 
 ---
@@ -329,25 +331,26 @@ Materials are the master catalog of all raw ingredients, APIs, excipients, and p
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `partNumber` | string | Yes | Max 50 chars; must be unique across all materials |
-| `materialName` | string | Yes | Max 200 chars |
-| `materialType` | enum | Yes | One of: `API`, `Excipient`, `Packaging`, `Product`, `Other` |
-| `storageConditions` | string | No | Max 255 chars |
-| `specificationDocument` | string | No | Max 500 chars (URL or file path) |
+| Field                   | Type   | Required | Constraints                                                                                                      |
+| ----------------------- | ------ | -------- | ---------------------------------------------------------------------------------------------------------------- |
+| `partNumber`            | string | Yes      | Max 50 chars; must be unique across all materials                                                                |
+| `materialName`          | string | Yes      | Max 200 chars                                                                                                    |
+| `materialType`          | enum   | Yes      | One of: `API`, `Excipient`, `Dietary Supplement`, `Container`, `Closure`, `Process Chemical`, `Testing Material` |
+| `storageConditions`     | string | No       | Max 100 chars                                                                                                    |
+| `specificationDocument` | string | No       | Max 50 chars (mã tài liệu kỹ thuật)                                                                              |
 
 **Business Rules:**
+
 - `partNumber` must be globally unique. Returns `409 Conflict` if duplicate.
 
 **Response `201 Created`:** Full material object (same as GET by ID).
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition              | Code  | Message                                 |
+| ---------------------- | ----- | --------------------------------------- |
 | Duplicate `partNumber` | `409` | `"Part number already exists: MAT-001"` |
-| Validation failure | `422` | Field-level error map |
+| Validation failure     | `422` | Field-level error map                   |
 
 ---
 
@@ -360,15 +363,16 @@ Materials are the master catalog of all raw ingredients, APIs, excipients, and p
 **Request Body:** Same schema as `POST /api/v1/materials`.
 
 **Business Rules:**
+
 - `partNumber` uniqueness check excludes the current record (allows keeping the same part number).
 
 **Response `200 OK`:** Updated material object.
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Material not found | `404` | `"Material not found with id: {id}"` |
+| Condition                              | Code  | Message                                                   |
+| -------------------------------------- | ----- | --------------------------------------------------------- |
+| Material not found                     | `404` | `"Material not found with id: {id}"`                      |
 | `partNumber` taken by another material | `409` | `"Part number already used by another material: MAT-001"` |
 
 ---
@@ -383,10 +387,10 @@ Materials are the master catalog of all raw ingredients, APIs, excipients, and p
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Material not found | `404` | `"Material not found with id: {id}"` |
-| Linked lots exist | `400` | `"Cannot delete material with existing inventory lots. Deactivate the material instead."` |
+| Condition          | Code  | Message                                                                                   |
+| ------------------ | ----- | ----------------------------------------------------------------------------------------- |
+| Material not found | `404` | `"Material not found with id: {id}"`                                                      |
+| Linked lots exist  | `400` | `"Cannot delete material with existing inventory lots. Deactivate the material instead."` |
 
 ---
 
@@ -397,6 +401,7 @@ Materials are the master catalog of all raw ingredients, APIs, excipients, and p
 Inventory lots represent physical batches of material received into stock. Each lot has a lifecycle status and tracks all quantity movements via transactions.
 
 **Lot Status Lifecycle:**
+
 ```
 Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
            ──(QC fail)──► Rejected ──(manual)──────► Depleted
@@ -412,15 +417,15 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `materialId` | UUID | No | Filter lots for a specific material |
-| `status` | enum | No | `Quarantine`, `Accepted`, `Rejected`, `Depleted` |
-| `nearExpiry` | boolean | No | If `true`, returns only lots expiring within 30 days |
-| `isSample` | boolean | No | Filter sample vs. regular lots |
-| `page` | integer | No | Default `0` |
-| `size` | integer | No | Default `20` |
-| `sort` | string | No | Default `receivedDate,desc` |
+| Parameter    | Type    | Required | Description                                          |
+| ------------ | ------- | -------- | ---------------------------------------------------- |
+| `materialId` | UUID    | No       | Filter lots for a specific material                  |
+| `status`     | enum    | No       | `Quarantine`, `Accepted`, `Rejected`, `Depleted`     |
+| `nearExpiry` | boolean | No       | If `true`, returns only lots expiring within 30 days |
+| `isSample`   | boolean | No       | Filter sample vs. regular lots                       |
+| `page`       | integer | No       | Default `0`                                          |
+| `size`       | integer | No       | Default `20`                                         |
+| `sort`       | string  | No       | Default `receivedDate,desc`                          |
 
 **Response `200 OK`:**
 
@@ -435,7 +440,7 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
       "manufacturerName": "Pharma Corp",
       "manufacturerLot": "PC-2026-0312",
       "supplierName": "Global Chem Supply",
-      "quantity": 25.500,
+      "quantity": 25.5,
       "unitOfMeasure": "kg",
       "status": "Quarantine",
       "receivedDate": "2026-03-10",
@@ -469,8 +474,8 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition     | Code  | Message                                  |
+| ------------- | ----- | ---------------------------------------- |
 | Lot not found | `404` | `"InventoryLot not found with id: {id}"` |
 
 ---
@@ -489,7 +494,7 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
   "manufacturerName": "Pharma Corp",
   "manufacturerLot": "PC-2026-0312",
   "supplierName": "Global Chem Supply",
-  "quantity": 25.500,
+  "quantity": 25.5,
   "unitOfMeasure": "kg",
   "receivedDate": "2026-03-10",
   "expirationDate": "2028-03-01",
@@ -503,27 +508,30 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `materialId` | UUID | Yes | Must exist in Materials |
-| `quantity` | decimal | Yes | > 0, max 15 digits / 3 decimal places |
-| `unitOfMeasure` | string | Yes | Max 20 chars (e.g. `kg`, `L`, `pcs`) |
-| `expirationDate` | date | Yes | Must be in the future |
-| `receivedDate` | date | No | Default: today |
-| `manufacturerName` | string | No | Max 100 chars |
-| `manufacturerLot` | string | No | Max 100 chars |
-| `supplierName` | string | No | Max 100 chars |
-| `storageLocation` | string | No | Max 100 chars |
-| `poNumber` | string | No | Max 30 chars |
-| `receivingFormId` | string | No | Max 50 chars |
-| `performedBy` | string | No | Username; defaults to authenticated user's `preferred_username` |
+| Field                 | Type    | Required | Constraints                                                     |
+| --------------------- | ------- | -------- | --------------------------------------------------------------- |
+| `materialId`          | UUID    | Yes      | Must exist in Materials                                         |
+| `manufacturerName`    | string  | Yes      | Max 100 chars                                                   |
+| `manufacturerLot`     | string  | Yes      | Max 50 chars                                                    |
+| `quantity`            | decimal | Yes      | > 0, max 10 digits / 3 decimal places                           |
+| `unitOfMeasure`       | string  | Yes      | Max 10 chars (e.g. `kg`, `L`, `pcs`)                            |
+| `receivedDate`        | date    | Yes      | Ngày nhận hàng                                                  |
+| `expirationDate`      | date    | Yes      | Must be in the future                                           |
+| `supplierName`        | string  | No       | Max 100 chars                                                   |
+| `inUseExpirationDate` | date    | No       | Hạn dùng sau khi mở                                             |
+| `storageLocation`     | string  | No       | Max 50 chars                                                    |
+| `poNumber`            | string  | No       | Max 30 chars                                                    |
+| `receivingFormId`     | string  | No       | Max 50 chars                                                    |
+| `performedBy`         | string  | No       | Username; defaults to authenticated user's `preferred_username` |
 
 **Business Rules:**
+
 - Lot is always created with `status = Quarantine`.
 - A `Receipt` transaction is automatically recorded with `quantity = +receivedQty`.
 - `isSample` is always `false` on receive; use the `/split` endpoint to create samples.
 
 **Side Effects:**
+
 - Creates 1 row in `inventory_lots`.
 - Creates 1 row in `inventory_transactions` (type `Receipt`, positive quantity).
 
@@ -531,11 +539,11 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| `materialId` not found | `404` | `"Material not found with id: {id}"` |
+| Condition                    | Code  | Message                                   |
+| ---------------------------- | ----- | ----------------------------------------- |
+| `materialId` not found       | `404` | `"Material not found with id: {id}"`      |
 | `expirationDate` in the past | `400` | `"Expiration date must be in the future"` |
-| `quantity` ≤ 0 | `422` | `"Quantity must be greater than 0"` |
+| `quantity` ≤ 0               | `422` | `"Quantity must be greater than 0"`       |
 
 ---
 
@@ -557,25 +565,26 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Allowed Transitions:**
 
-| From | To (allowed) |
-|------|-------------|
-| `Quarantine` | `Accepted`, `Rejected` |
-| `Accepted` | `Depleted` |
-| `Rejected` | `Depleted` |
-| `Depleted` | _(none — terminal state)_ |
+| From         | To (allowed)              |
+| ------------ | ------------------------- |
+| `Quarantine` | `Accepted`, `Rejected`    |
+| `Accepted`   | `Depleted`                |
+| `Rejected`   | `Depleted`                |
+| `Depleted`   | _(none — terminal state)_ |
 
 **Side Effects:**
+
 - Creates 1 `Adjustment` transaction row with `quantity = 0` and a status-change note.
 
 **Response `200 OK`:** Updated lot object.
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Lot not found | `404` | `"InventoryLot not found with id: {id}"` |
-| Invalid transition | `400` | `"Invalid status transition: Quarantine → Depleted"` |
-| Lot is already terminal (`Depleted`) | `400` | `"Invalid status transition: Depleted → Accepted"` |
+| Condition                            | Code  | Message                                              |
+| ------------------------------------ | ----- | ---------------------------------------------------- |
+| Lot not found                        | `404` | `"InventoryLot not found with id: {id}"`             |
+| Invalid transition                   | `400` | `"Invalid status transition: Quarantine → Depleted"` |
+| Lot is already terminal (`Depleted`) | `400` | `"Invalid status transition: Depleted → Accepted"`   |
 
 ---
 
@@ -589,7 +598,7 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 ```json
 {
-  "sampleQuantity": 0.500,
+  "sampleQuantity": 0.5,
   "storageLocation": "QC Lab / Fridge-1",
   "performedBy": "qc_user"
 }
@@ -597,19 +606,21 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `sampleQuantity` | decimal | Yes | > 0; must be ≤ parent lot's current `quantity` |
-| `storageLocation` | string | No | Max 100 chars |
-| `performedBy` | string | No | Defaults to authenticated user |
+| Field             | Type    | Required | Constraints                                    |
+| ----------------- | ------- | -------- | ---------------------------------------------- |
+| `sampleQuantity`  | decimal | Yes      | > 0; must be ≤ parent lot's current `quantity` |
+| `storageLocation` | string  | No       | Max 100 chars                                  |
+| `performedBy`     | string  | No       | Defaults to authenticated user                 |
 
 **Business Rules:**
+
 - Parent lot must have `status = Quarantine` or `Accepted`.
 - `sampleQuantity` must not exceed parent lot's `quantity`.
 - Parent `quantity` decreases by `sampleQuantity`. If reaches 0, parent → `Depleted`.
 - New child lot is created with `isSample = true`, `parentLotId = {id}`, `status = Quarantine`.
 
 **Side Effects:**
+
 - Parent lot: `quantity` decreases; `status` may become `Depleted`.
 - Parent lot: 1 `Split` transaction row (negative quantity).
 - Child lot: created with `isSample = true`.
@@ -619,10 +630,10 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Lot not found | `404` | `"InventoryLot not found with id: {id}"` |
-| Invalid lot status | `400` | `"Can only split from Quarantine or Accepted lots"` |
+| Condition             | Code  | Message                                                |
+| --------------------- | ----- | ------------------------------------------------------ |
+| Lot not found         | `404` | `"InventoryLot not found with id: {id}"`               |
+| Invalid lot status    | `400` | `"Can only split from Quarantine or Accepted lots"`    |
 | Insufficient quantity | `400` | `"Insufficient quantity for split. Available: 25.500"` |
 
 ---
@@ -637,7 +648,7 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 ```json
 {
-  "adjustmentQuantity": -1.200,
+  "adjustmentQuantity": -1.2,
   "reason": "Spillage during routine handling",
   "performedBy": "jdoe"
 }
@@ -645,18 +656,20 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `adjustmentQuantity` | decimal | Yes | May be positive (add) or negative (subtract); resulting quantity must be ≥ 0 |
-| `reason` | string | Yes | Max 500 chars |
-| `performedBy` | string | No | Defaults to authenticated user |
+| Field                | Type    | Required | Constraints                                                                  |
+| -------------------- | ------- | -------- | ---------------------------------------------------------------------------- |
+| `adjustmentQuantity` | decimal | Yes      | May be positive (add) or negative (subtract); resulting quantity must be ≥ 0 |
+| `reason`             | string  | Yes      | Max 500 chars                                                                |
+| `performedBy`        | string  | No       | Defaults to authenticated user                                               |
 
 **Business Rules:**
+
 - Lot must be `Accepted` for a positive or negative adjustment.
 - Resulting `quantity` cannot be negative (returns `400`).
 - If resulting quantity = 0, lot automatically transitions to `Depleted`.
 
 **Side Effects:**
+
 - 1 `Adjustment` transaction row with the signed quantity.
 - Lot `quantity` updated.
 - If new quantity = 0, lot `status` → `Depleted`.
@@ -682,6 +695,7 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 ```
 
 **Side Effects:**
+
 - Lot `storageLocation` updated.
 - 1 `Transfer` transaction row recorded (quantity = 0, notes = old → new location).
 
@@ -696,19 +710,21 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 **Required roles:** `Admin`, `InventoryManager`
 
 **Business Rules:**
+
 - Lot must be `Rejected` or `Depleted` to be disposed. Active `Accepted` lots cannot be disposed directly.
 
 **Request Body:**
 
 ```json
 {
-  "disposalQuantity": 25.500,
+  "disposalQuantity": 25.5,
   "reason": "QC failure — out of specification",
   "performedBy": "jdoe"
 }
 ```
 
 **Side Effects:**
+
 - 1 `Disposal` transaction row (negative quantity = full disposal amount).
 - Lot `quantity` → 0 and `status` → `Depleted` (if not already).
 
@@ -716,8 +732,8 @@ Quarantine ──(QC pass)──► Accepted ──(depleted)──► Depleted
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition                         | Code  | Message                                                   |
+| --------------------------------- | ----- | --------------------------------------------------------- |
 | Lot is `Accepted` or `Quarantine` | `400` | `"Disposal only permitted for Rejected or Depleted lots"` |
 
 ---
@@ -738,9 +754,9 @@ Transactions are **immutable** records of every quantity change to a lot. They a
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `type` | enum | No | Filter by `transactionType`: `Receipt`, `Usage`, `Split`, `Transfer`, `Adjustment`, `Disposal` |
+| Parameter | Type | Required | Description                                                                                    |
+| --------- | ---- | -------- | ---------------------------------------------------------------------------------------------- |
+| `type`    | enum | No       | Filter by `transactionType`: `Receipt`, `Usage`, `Split`, `Transfer`, `Adjustment`, `Disposal` |
 
 **Response `200 OK`:**
 
@@ -750,7 +766,7 @@ Transactions are **immutable** records of every quantity change to a lot. They a
     "transactionId": "c3d4e5f6-...",
     "lotId": "b2c3d4e5-...",
     "transactionType": "Receipt",
-    "quantity": 25.500,
+    "quantity": 25.5,
     "transactionDate": "2026-03-10T08:00:00",
     "referenceId": null,
     "notes": "Initial stock receipt",
@@ -761,16 +777,16 @@ Transactions are **immutable** records of every quantity change to a lot. They a
 
 **Response Fields:**
 
-| Field | Description |
-|-------|-------------|
-| `quantity` | Positive = stock in; Negative = stock out |
-| `referenceId` | Batch number, PO number, or related entity ID |
+| Field             | Description                                                               |
+| ----------------- | ------------------------------------------------------------------------- |
+| `quantity`        | Positive = stock in; Negative = stock out                                 |
+| `referenceId`     | Batch number, PO number, or related entity ID                             |
 | `transactionType` | One of: `Receipt`, `Usage`, `Split`, `Transfer`, `Adjustment`, `Disposal` |
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition     | Code  | Message                                     |
+| ------------- | ----- | ------------------------------------------- |
 | Lot not found | `404` | `"InventoryLot not found with id: {lotId}"` |
 
 ---
@@ -783,11 +799,11 @@ QC tests are performed against inventory lots to determine whether material is a
 
 **QC Result → Lot Status Mapping:**
 
-| QC Result State | Lot Status Result |
-|-----------------|------------------|
-| All `Pass`, no `Pending` | `Quarantine → Accepted` |
-| Any `Fail` (regardless of others) | `Quarantine → Rejected` |
-| Mix of `Pass` + `Pending` | No change (still `Quarantine`) |
+| QC Result State                   | Lot Status Result              |
+| --------------------------------- | ------------------------------ |
+| All `Pass`, no `Pending`          | `Quarantine → Accepted`        |
+| Any `Fail` (regardless of others) | `Quarantine → Rejected`        |
+| Mix of `Pass` + `Pending`         | No change (still `Quarantine`) |
 
 ---
 
@@ -799,9 +815,9 @@ QC tests are performed against inventory lots to determine whether material is a
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `lotId` | UUID | Yes | Lot to fetch tests for |
+| Parameter | Type | Required | Description            |
+| --------- | ---- | -------- | ---------------------- |
+| `lotId`   | UUID | Yes      | Lot to fetch tests for |
 
 **Response `200 OK`:**
 
@@ -837,8 +853,8 @@ QC tests are performed against inventory lots to determine whether material is a
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition      | Code  | Message                            |
+| -------------- | ----- | ---------------------------------- |
 | Test not found | `404` | `"QCTest not found with id: {id}"` |
 
 ---
@@ -867,33 +883,35 @@ QC tests are performed against inventory lots to determine whether material is a
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `lotId` | UUID | Yes | Must be an existing lot |
-| `testType` | enum | Yes | `Identity`, `Potency`, `Microbial`, `GrowthPromotion`, `Physical`, `Chemical` |
-| `testMethod` | string | Yes | Max 100 chars |
-| `testDate` | date | Yes | Cannot be in the future |
-| `testResult` | string | Yes | Max 100 chars |
-| `acceptanceCriteria` | string | No | Max 200 chars |
-| `resultStatus` | enum | Yes | `Pass`, `Fail`, `Pending` |
-| `performedBy` | string | Yes | Max 50 chars |
-| `verifiedBy` | string | No | Max 50 chars; required when `resultStatus = Pass` or `Fail` |
+| Field                | Type   | Required | Constraints                                                                   |
+| -------------------- | ------ | -------- | ----------------------------------------------------------------------------- |
+| `lotId`              | UUID   | Yes      | Must be an existing lot                                                       |
+| `testType`           | enum   | Yes      | `Identity`, `Potency`, `Microbial`, `GrowthPromotion`, `Physical`, `Chemical` |
+| `testMethod`         | string | Yes      | Max 100 chars                                                                 |
+| `testDate`           | date   | Yes      | Cannot be in the future                                                       |
+| `testResult`         | string | Yes      | Max 100 chars                                                                 |
+| `acceptanceCriteria` | string | No       | Max 200 chars                                                                 |
+| `resultStatus`       | enum   | Yes      | `Pass`, `Fail`, `Pending`                                                     |
+| `performedBy`        | string | Yes      | Max 50 chars                                                                  |
+| `verifiedBy`         | string | No       | Max 50 chars; required when `resultStatus = Pass` or `Fail`                   |
 
 **Business Rules:**
+
 - Cannot add tests to lots with `status = Rejected` or `Depleted`.
 - After saving, the system evaluates all tests for this lot and may automatically update the lot status (see mapping above).
 
 **Side Effects:**
+
 - If lot status changes automatically: 1 `Adjustment` transaction row is recorded with `performedBy = "system"`.
 
 **Response `201 Created`:** Full test object.
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Lot not found | `404` | `"InventoryLot not found with id: {lotId}"` |
-| Lot is Rejected or Depleted | `400` | `"Cannot add QC test to a lot with status: Rejected"` |
+| Condition                         | Code  | Message                                                |
+| --------------------------------- | ----- | ------------------------------------------------------ |
+| Lot not found                     | `404` | `"InventoryLot not found with id: {lotId}"`            |
+| Lot is Rejected or Depleted       | `400` | `"Cannot add QC test to a lot with status: Rejected"`  |
 | `verifiedBy` missing on Pass/Fail | `422` | `"verifiedBy is required when result is Pass or Fail"` |
 
 ---
@@ -907,6 +925,7 @@ QC tests are performed against inventory lots to determine whether material is a
 **Request Body:** Same schema as `POST /api/v1/qctests` (full replacement).
 
 **Business Rules:**
+
 - After update, lot status re-evaluation runs automatically.
 - Cannot change `lotId` on update.
 
@@ -923,8 +942,8 @@ QC tests are performed against inventory lots to determine whether material is a
 **Query Parameters:**
 
 | Parameter | Type | Required |
-|-----------|------|----------|
-| `lotId` | UUID | Yes |
+| --------- | ---- | -------- |
+| `lotId`   | UUID | Yes      |
 
 **Response `200 OK`:**
 
@@ -948,6 +967,7 @@ QC tests are performed against inventory lots to determine whether material is a
 A production batch represents a manufacturing run of a finished product. It consumes inventory lots as components, tracking planned vs. actual quantities used.
 
 **Batch Status Lifecycle:**
+
 ```
 Planned ──► InProgress ──► Complete
                        ──► Rejected
@@ -963,13 +983,13 @@ Planned ──► InProgress ──► Complete
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `status` | enum | No | `Planned`, `InProgress`, `Complete`, `Rejected` |
-| `productId` | UUID | No | Filter by product (material) |
-| `page` | integer | No | Default `0` |
-| `size` | integer | No | Default `20` |
-| `sort` | string | No | Default `createdDate,desc` |
+| Parameter   | Type    | Required | Description                                     |
+| ----------- | ------- | -------- | ----------------------------------------------- |
+| `status`    | enum    | No       | `Planned`, `InProgress`, `Complete`, `Rejected` |
+| `productId` | UUID    | No       | Filter by product (material)                    |
+| `page`      | integer | No       | Default `0`                                     |
+| `size`      | integer | No       | Default `20`                                    |
+| `sort`      | string  | No       | Default `createdDate,desc`                      |
 
 **Response `200 OK`:**
 
@@ -981,7 +1001,7 @@ Planned ──► InProgress ──► Complete
       "productId": "a1b2c3d4-...",
       "productName": "IMS-Tablet-500mg",
       "batchNumber": "BATCH-2026-001",
-      "batchSize": 100.000,
+      "batchSize": 100.0,
       "unitOfMeasure": "kg",
       "manufactureDate": "2026-03-15",
       "expirationDate": "2028-03-15",
@@ -1015,7 +1035,7 @@ Planned ──► InProgress ──► Complete
   "productId": "a1b2c3d4-...",
   "productName": "IMS-Tablet-500mg",
   "batchNumber": "BATCH-2026-001",
-  "batchSize": 100.000,
+  "batchSize": 100.0,
   "unitOfMeasure": "kg",
   "manufactureDate": "2026-03-15",
   "expirationDate": "2028-03-15",
@@ -1029,9 +1049,9 @@ Planned ──► InProgress ──► Complete
       "materialName": "Vitamin D3 100K",
       "partNumber": "MAT-001",
       "lotStatus": "Accepted",
-      "lotAvailableQuantity": 23.500,
-      "plannedQuantity": 2.000,
-      "actualQuantity": 2.000,
+      "lotAvailableQuantity": 23.5,
+      "plannedQuantity": 2.0,
+      "actualQuantity": 2.0,
       "unitOfMeasure": "kg",
       "additionDate": "2026-03-11T08:00:00",
       "addedBy": "operator1"
@@ -1054,7 +1074,7 @@ Planned ──► InProgress ──► Complete
 {
   "productId": "a1b2c3d4-...",
   "batchNumber": "BATCH-2026-001",
-  "batchSize": 100.000,
+  "batchSize": 100.0,
   "unitOfMeasure": "kg",
   "manufactureDate": "2026-03-15",
   "expirationDate": "2028-03-15"
@@ -1063,23 +1083,23 @@ Planned ──► InProgress ──► Complete
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `productId` | UUID | Yes | Must be an existing material |
-| `batchNumber` | string | Yes | Max 50 chars; globally unique |
-| `batchSize` | decimal | Yes | > 0 |
-| `unitOfMeasure` | string | Yes | Max 10 chars |
-| `manufactureDate` | date | Yes | Cannot be in the past by more than 7 days |
-| `expirationDate` | date | Yes | Must be after `manufactureDate` |
+| Field             | Type    | Required | Constraints                               |
+| ----------------- | ------- | -------- | ----------------------------------------- |
+| `productId`       | UUID    | Yes      | Must be an existing material              |
+| `batchNumber`     | string  | Yes      | Max 50 chars; globally unique             |
+| `batchSize`       | decimal | Yes      | > 0                                       |
+| `unitOfMeasure`   | string  | Yes      | Max 10 chars                              |
+| `manufactureDate` | date    | Yes      | Cannot be in the past by more than 7 days |
+| `expirationDate`  | date    | Yes      | Must be after `manufactureDate`           |
 
 **Response `201 Created`:** Full batch object (without components list).
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Duplicate `batchNumber` | `409` | `"Batch number already exists: BATCH-2026-001"` |
-| `productId` not found | `404` | `"Material not found with id: {productId}"` |
+| Condition                                 | Code  | Message                                            |
+| ----------------------------------------- | ----- | -------------------------------------------------- |
+| Duplicate `batchNumber`                   | `409` | `"Batch number already exists: BATCH-2026-001"`    |
+| `productId` not found                     | `404` | `"Material not found with id: {productId}"`        |
 | `expirationDate` before `manufactureDate` | `400` | `"Expiration date must be after manufacture date"` |
 
 ---
@@ -1101,24 +1121,25 @@ Planned ──► InProgress ──► Complete
 
 **Allowed Transitions:**
 
-| From | To (allowed) |
-|------|-------------|
-| `Planned` | `InProgress` |
+| From         | To (allowed)           |
+| ------------ | ---------------------- |
+| `Planned`    | `InProgress`           |
 | `InProgress` | `Complete`, `Rejected` |
-| `Complete` | _(none — terminal)_ |
-| `Rejected` | _(none — terminal)_ |
+| `Complete`   | _(none — terminal)_    |
+| `Rejected`   | _(none — terminal)_    |
 
 **Business Rules for `Complete`:**
+
 - All components must have a non-null `actualQuantity` before the batch can be marked `Complete`.
 
 **Response `200 OK`:** Updated batch object.
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Batch not found | `404` | `"ProductionBatch not found with id: {id}"` |
-| Invalid transition | `400` | `"Invalid batch status transition: Planned → Complete"` |
+| Condition             | Code  | Message                                                                   |
+| --------------------- | ----- | ------------------------------------------------------------------------- |
+| Batch not found       | `404` | `"ProductionBatch not found with id: {id}"`                               |
+| Invalid transition    | `400` | `"Invalid batch status transition: Planned → Complete"`                   |
 | Incomplete components | `400` | `"Cannot complete batch: 2 component(s) have not confirmed actual usage"` |
 
 ---
@@ -1130,6 +1151,7 @@ Planned ──► InProgress ──► Complete
 **Required roles:** `Admin`, `InventoryManager`, `Production`
 
 **Business Rules:**
+
 - Batch must be in `InProgress` or `Planned` status.
 - Lot must have `status = Accepted`.
 - Lot must not be expired (`expirationDate >= today`).
@@ -1140,7 +1162,7 @@ Planned ──► InProgress ──► Complete
 ```json
 {
   "lotId": "b2c3d4e5-...",
-  "plannedQuantity": 2.000,
+  "plannedQuantity": 2.0,
   "unitOfMeasure": "kg",
   "addedBy": "operator1"
 }
@@ -1148,24 +1170,24 @@ Planned ──► InProgress ──► Complete
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `lotId` | UUID | Yes | Must be an Accepted, non-expired lot |
-| `plannedQuantity` | decimal | Yes | > 0 |
-| `unitOfMeasure` | string | Yes | Max 10 chars |
-| `addedBy` | string | No | Defaults to authenticated user |
+| Field             | Type    | Required | Constraints                          |
+| ----------------- | ------- | -------- | ------------------------------------ |
+| `lotId`           | UUID    | Yes      | Must be an Accepted, non-expired lot |
+| `plannedQuantity` | decimal | Yes      | > 0                                  |
+| `unitOfMeasure`   | string  | Yes      | Max 10 chars                         |
+| `addedBy`         | string  | No       | Defaults to authenticated user       |
 
 **Response `201 Created`:** Full component object.
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Lot not found | `404` | `"InventoryLot not found with id: {lotId}"` |
-| Lot not Accepted | `400` | `"Lot must be Accepted to be used in production. Current status: Quarantine"` |
-| Lot expired | `400` | `"Lot has expired. Expiration date: 2025-12-01"` |
-| Duplicate lot in batch | `409` | `"Lot is already added to this batch"` |
-| Batch is Complete/Rejected | `400` | `"Cannot add components to a batch with status: Complete"` |
+| Condition                  | Code  | Message                                                                       |
+| -------------------------- | ----- | ----------------------------------------------------------------------------- |
+| Lot not found              | `404` | `"InventoryLot not found with id: {lotId}"`                                   |
+| Lot not Accepted           | `400` | `"Lot must be Accepted to be used in production. Current status: Quarantine"` |
+| Lot expired                | `400` | `"Lot has expired. Expiration date: 2025-12-01"`                              |
+| Duplicate lot in batch     | `409` | `"Lot is already added to this batch"`                                        |
+| Batch is Complete/Rejected | `400` | `"Cannot add components to a batch with status: Complete"`                    |
 
 ---
 
@@ -1179,24 +1201,26 @@ Planned ──► InProgress ──► Complete
 
 ```json
 {
-  "actualQuantity": 2.000,
+  "actualQuantity": 2.0,
   "performedBy": "operator1"
 }
 ```
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `actualQuantity` | decimal | Yes | > 0; must not exceed lot's current `quantity` |
+| Field            | Type    | Required | Constraints                                   |
+| ---------------- | ------- | -------- | --------------------------------------------- |
+| `actualQuantity` | decimal | Yes      | > 0; must not exceed lot's current `quantity` |
 
 **Business Rules:**
+
 - Batch must be `InProgress`.
 - Lot must still be `Accepted` and not expired.
 - `actualQuantity` must not exceed `lot.quantity`.
 - If `lot.quantity - actualQuantity = 0`, lot status → `Depleted`.
 
 **Side Effects:**
+
 - Lot `quantity` decreases by `actualQuantity`.
 - If lot quantity reaches 0, lot `status` → `Depleted`.
 - 1 `Usage` transaction row (negative quantity, `referenceId = batchNumber`).
@@ -1207,8 +1231,8 @@ Planned ──► InProgress ──► Complete
 {
   "componentId": "f6a7b8c9-...",
   "lotId": "b2c3d4e5-...",
-  "plannedQuantity": 2.000,
-  "actualQuantity": 2.000,
+  "plannedQuantity": 2.0,
+  "actualQuantity": 2.0,
   "unitOfMeasure": "kg",
   "additionDate": "2026-03-11T09:30:00",
   "addedBy": "operator1"
@@ -1217,13 +1241,13 @@ Planned ──► InProgress ──► Complete
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Component not found | `404` | `"BatchComponent not found with id: {componentId}"` |
-| Batch not InProgress | `400` | `"Batch must be In Progress to confirm usage"` |
-| Lot not Accepted | `400` | `"Lot must be Accepted to use in production"` |
+| Condition             | Code  | Message                                                           |
+| --------------------- | ----- | ----------------------------------------------------------------- |
+| Component not found   | `404` | `"BatchComponent not found with id: {componentId}"`               |
+| Batch not InProgress  | `400` | `"Batch must be In Progress to confirm usage"`                    |
+| Lot not Accepted      | `400` | `"Lot must be Accepted to use in production"`                     |
 | Insufficient quantity | `400` | `"Insufficient lot quantity. Available: 5.000, Requested: 7.000"` |
-| Lot expired | `400` | `"Lot has expired"` |
+| Lot expired           | `400` | `"Lot has expired"`                                               |
 
 ---
 
@@ -1235,14 +1259,14 @@ Labels are generated from configurable HTML templates. The system supports templ
 
 **Supported Label Types:**
 
-| Type | Triggered By |
-|------|-------------|
-| `RawMaterial` | Lot receive (auto-generated) |
-| `Sample` | Lot split (auto-generated) |
-| `FinishedProduct` | Batch completion (auto-generated) |
-| `Status` | Lot status change (Accepted/Rejected) |
-| `Intermediate` | Manual generation |
-| `API` | Manual generation |
+| Type              | Triggered By                          |
+| ----------------- | ------------------------------------- |
+| `RawMaterial`     | Lot receive (auto-generated)          |
+| `Sample`          | Lot split (auto-generated)            |
+| `FinishedProduct` | Batch completion (auto-generated)     |
+| `Status`          | Lot status change (Accepted/Rejected) |
+| `Intermediate`    | Manual generation                     |
+| `API`             | Manual generation                     |
 
 ---
 
@@ -1254,9 +1278,9 @@ Labels are generated from configurable HTML templates. The system supports templ
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `labelType` | enum | No | Filter by label type |
+| Parameter   | Type | Required | Description          |
+| ----------- | ---- | -------- | -------------------- |
+| `labelType` | enum | No       | Filter by label type |
 
 **Response `200 OK`:**
 
@@ -1267,8 +1291,8 @@ Labels are generated from configurable HTML templates. The system supports templ
     "templateName": "Standard Raw Material Label",
     "labelType": "RawMaterial",
     "templateContent": "<div>{{materialName}}<br/>Lot: {{lotId}}</div>",
-    "width": 10.00,
-    "height": 5.00,
+    "width": 10.0,
+    "height": 5.0,
     "createdDate": "2026-01-15T09:00:00",
     "modifiedDate": "2026-02-01T11:00:00"
   }
@@ -1285,8 +1309,8 @@ Labels are generated from configurable HTML templates. The system supports templ
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition          | Code  | Message                                   |
+| ------------------ | ----- | ----------------------------------------- |
 | Template not found | `404` | `"LabelTemplate not found with id: {id}"` |
 
 ---
@@ -1305,51 +1329,51 @@ Labels are generated from configurable HTML templates. The system supports templ
   "templateName": "Custom Raw Material Label",
   "labelType": "RawMaterial",
   "templateContent": "<div style='font-size:12pt'><b>{{materialName}}</b><br/>Lot: {{lotId}}<br/>Exp: {{expirationDate}}<br/>{{storageLocation}}</div>",
-  "width": 10.00,
-  "height": 5.00
+  "width": 10.0,
+  "height": 5.0
 }
 ```
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `templateId` | string | Yes | Max 20 chars; unique |
-| `templateName` | string | Yes | Max 100 chars |
-| `labelType` | enum | Yes | `RawMaterial`, `Sample`, `Intermediate`, `FinishedProduct`, `API`, `Status` |
-| `templateContent` | string | Yes | HTML with `{{placeholder}}` tokens |
-| `width` | decimal | Yes | In cm; > 0 |
-| `height` | decimal | Yes | In cm; > 0 |
+| Field             | Type    | Required | Constraints                                                                 |
+| ----------------- | ------- | -------- | --------------------------------------------------------------------------- |
+| `templateId`      | string  | Yes      | Max 20 chars; unique                                                        |
+| `templateName`    | string  | Yes      | Max 100 chars                                                               |
+| `labelType`       | enum    | Yes      | `RawMaterial`, `Sample`, `Intermediate`, `FinishedProduct`, `API`, `Status` |
+| `templateContent` | string  | Yes      | HTML with `{{placeholder}}` tokens                                          |
+| `width`           | decimal | Yes      | In cm; > 0                                                                  |
+| `height`          | decimal | Yes      | In cm; > 0                                                                  |
 
 **Supported Placeholders by Label Type:**
 
-| Placeholder | Available in |
-|-------------|-------------|
-| `{{lotId}}` | RawMaterial, Sample, Intermediate, API, Status |
-| `{{materialName}}` | RawMaterial, Sample, Intermediate, API, Status |
-| `{{partNumber}}` | RawMaterial, Sample, Intermediate, API |
-| `{{manufacturerLot}}` | RawMaterial, Sample |
-| `{{manufacturerName}}` | RawMaterial, Sample |
-| `{{quantity}}` | RawMaterial, Sample |
-| `{{unitOfMeasure}}` | RawMaterial, Sample, FinishedProduct |
-| `{{expirationDate}}` | RawMaterial, Sample, FinishedProduct |
-| `{{storageLocation}}` | RawMaterial, Sample |
-| `{{receivedDate}}` | RawMaterial |
-| `{{parentLotId}}` | Sample |
-| `{{isSample}}` | Sample |
-| `{{batchNumber}}` | FinishedProduct |
-| `{{productName}}` | FinishedProduct |
-| `{{batchSize}}` | FinishedProduct |
-| `{{manufactureDate}}` | FinishedProduct |
-| `{{status}}` | Status |
-| `{{statusDate}}` | Status |
+| Placeholder            | Available in                                   |
+| ---------------------- | ---------------------------------------------- |
+| `{{lotId}}`            | RawMaterial, Sample, Intermediate, API, Status |
+| `{{materialName}}`     | RawMaterial, Sample, Intermediate, API, Status |
+| `{{partNumber}}`       | RawMaterial, Sample, Intermediate, API         |
+| `{{manufacturerLot}}`  | RawMaterial, Sample                            |
+| `{{manufacturerName}}` | RawMaterial, Sample                            |
+| `{{quantity}}`         | RawMaterial, Sample                            |
+| `{{unitOfMeasure}}`    | RawMaterial, Sample, FinishedProduct           |
+| `{{expirationDate}}`   | RawMaterial, Sample, FinishedProduct           |
+| `{{storageLocation}}`  | RawMaterial, Sample                            |
+| `{{receivedDate}}`     | RawMaterial                                    |
+| `{{parentLotId}}`      | Sample                                         |
+| `{{isSample}}`         | Sample                                         |
+| `{{batchNumber}}`      | FinishedProduct                                |
+| `{{productName}}`      | FinishedProduct                                |
+| `{{batchSize}}`        | FinishedProduct                                |
+| `{{manufactureDate}}`  | FinishedProduct                                |
+| `{{status}}`           | Status                                         |
+| `{{statusDate}}`       | Status                                         |
 
 **Response `201 Created`:** Full template object.
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition              | Code  | Message                                   |
+| ---------------------- | ----- | ----------------------------------------- |
 | Duplicate `templateId` | `409` | `"Template ID already exists: TPL-RM-02"` |
 
 ---
@@ -1394,13 +1418,14 @@ Labels are generated from configurable HTML templates. The system supports templ
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `templateId` | string | Yes | Must be an existing template |
-| `sourceType` | enum | Yes | `LOT` or `BATCH` |
-| `sourceId` | UUID | Yes | Must be an existing lot (for `LOT`) or batch (for `BATCH`) |
+| Field        | Type   | Required | Constraints                                                |
+| ------------ | ------ | -------- | ---------------------------------------------------------- |
+| `templateId` | string | Yes      | Must be an existing template                               |
+| `sourceType` | enum   | Yes      | `LOT` or `BATCH`                                           |
+| `sourceId`   | UUID   | Yes      | Must be an existing lot (for `LOT`) or batch (for `BATCH`) |
 
 **Business Rules:**
+
 - The label type of the template must be compatible with the source type:
   - `RawMaterial`, `Sample`, `Status`, `Intermediate`, `API` → source must be `LOT`
   - `FinishedProduct` → source must be `BATCH`
@@ -1413,19 +1438,19 @@ Labels are generated from configurable HTML templates. The system supports templ
   "templateName": "Standard Raw Material Label",
   "labelType": "RawMaterial",
   "renderedContent": "<div><b>Vitamin D3 100K</b><br/>Lot: b2c3d4e5-...<br/>Exp: 2028-03-01</div>",
-  "width": 10.00,
-  "height": 5.00,
+  "width": 10.0,
+  "height": 5.0,
   "generatedAt": "2026-03-10T14:30:00"
 }
 ```
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Template not found | `404` | `"LabelTemplate not found with id: {templateId}"` |
-| Source not found | `404` | `"InventoryLot not found with id: {sourceId}"` |
-| Type mismatch | `400` | `"Template type 'FinishedProduct' requires source type 'BATCH'"` |
+| Condition          | Code  | Message                                                          |
+| ------------------ | ----- | ---------------------------------------------------------------- |
+| Template not found | `404` | `"LabelTemplate not found with id: {templateId}"`                |
+| Source not found   | `404` | `"InventoryLot not found with id: {sourceId}"`                   |
+| Type mismatch      | `400` | `"Template type 'FinishedProduct' requires source type 'BATCH'"` |
 
 ---
 
@@ -1472,11 +1497,11 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `days` | integer | No | `30` | Expiry window in days |
-| `page` | integer | No | `0` | Pagination |
-| `size` | integer | No | `20` | Pagination |
+| Parameter | Type    | Required | Default | Description           |
+| --------- | ------- | -------- | ------- | --------------------- |
+| `days`    | integer | No       | `30`    | Expiry window in days |
+| `page`    | integer | No       | `0`     | Pagination            |
+| `size`    | integer | No       | `20`    | Pagination            |
 
 **Response `200 OK`:**
 
@@ -1487,7 +1512,7 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
       "lotId": "b2c3d4e5-...",
       "materialName": "Vitamin D3 100K",
       "partNumber": "MAT-001",
-      "quantity": 5.500,
+      "quantity": 5.5,
       "unitOfMeasure": "kg",
       "status": "Accepted",
       "storageLocation": "Warehouse-A / Shelf-3",
@@ -1519,21 +1544,21 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
     "materialName": "Vitamin D3 100K",
     "partNumber": "MAT-001",
     "status": "Accepted",
-    "quantity": 21.500,
+    "quantity": 21.5,
     "receivedDate": "2026-03-10",
     "expirationDate": "2028-03-01"
   },
   "transactions": [
     {
       "transactionType": "Usage",
-      "quantity": -2.000,
+      "quantity": -2.0,
       "transactionDate": "2026-03-15T10:00:00",
       "referenceId": "BATCH-2026-001",
       "performedBy": "operator1"
     },
     {
       "transactionType": "Receipt",
-      "quantity": 25.500,
+      "quantity": 25.5,
       "transactionDate": "2026-03-10T08:00:00",
       "performedBy": "jdoe"
     }
@@ -1552,7 +1577,7 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
       "batchNumber": "BATCH-2026-001",
       "productName": "IMS-Tablet-500mg",
       "status": "Complete",
-      "actualQuantityUsed": 2.000
+      "actualQuantityUsed": 2.0
     }
   ]
 }
@@ -1560,8 +1585,8 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
+| Condition     | Code  | Message                                     |
+| ------------- | ----- | ------------------------------------------- |
 | Lot not found | `404` | `"InventoryLot not found with id: {lotId}"` |
 
 ---
@@ -1574,10 +1599,10 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `from` | date | Yes | Start of date range (test_date ≥ from) |
-| `to` | date | Yes | End of date range (test_date ≤ to) |
+| Parameter | Type | Required | Description                            |
+| --------- | ---- | -------- | -------------------------------------- |
+| `from`    | date | Yes      | Start of date range (test_date ≥ from) |
+| `to`      | date | Yes      | End of date range (test_date ≤ to)     |
 
 **Response `200 OK`:**
 
@@ -1617,10 +1642,10 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `status` | enum | No | Filter by lot status |
-| `materialType` | enum | No | Filter by material type |
+| Parameter      | Type | Required | Description             |
+| -------------- | ---- | -------- | ----------------------- |
+| `status`       | enum | No       | Filter by lot status    |
+| `materialType` | enum | No       | Filter by material type |
 
 **Response `200 OK`:**
 
@@ -1632,12 +1657,12 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
     "materialName": "Vitamin D3 100K",
     "materialType": "API",
     "lots": {
-      "Quarantine": { "count": 1, "totalQuantity": 10.000 },
-      "Accepted":   { "count": 2, "totalQuantity": 46.500 },
-      "Rejected":   { "count": 0, "totalQuantity": 0 },
-      "Depleted":   { "count": 1, "totalQuantity": 0 }
+      "Quarantine": { "count": 1, "totalQuantity": 10.0 },
+      "Accepted": { "count": 2, "totalQuantity": 46.5 },
+      "Rejected": { "count": 0, "totalQuantity": 0 },
+      "Depleted": { "count": 1, "totalQuantity": 0 }
     },
-    "totalAvailable": 46.500,
+    "totalAvailable": 46.5,
     "unit": "kg"
   }
 ]
@@ -1661,12 +1686,12 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `role` | enum | No | Filter by role |
-| `isActive` | boolean | No | Filter active/inactive |
-| `page` | integer | No | Default `0` |
-| `size` | integer | No | Default `20` |
+| Parameter  | Type    | Required | Description            |
+| ---------- | ------- | -------- | ---------------------- |
+| `role`     | enum    | No       | Filter by role         |
+| `isActive` | boolean | No       | Filter active/inactive |
+| `page`     | integer | No       | Default `0`            |
+| `size`     | integer | No       | Default `20`           |
 
 **Response `200 OK`:**
 
@@ -1733,14 +1758,15 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
 
 **Field Validation:**
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `username` | string | Yes | Max 50 chars; unique; alphanumeric + underscore only |
-| `email` | string | Yes | Max 100 chars; valid email format; unique |
-| `password` | string | Yes | Min 8 chars; must contain uppercase, lowercase, digit |
-| `role` | enum | Yes | `Admin`, `InventoryManager`, `QualityControl`, `Production`, `Viewer` |
+| Field      | Type   | Required | Constraints                                                           |
+| ---------- | ------ | -------- | --------------------------------------------------------------------- |
+| `username` | string | Yes      | Max 50 chars; unique; alphanumeric + underscore only                  |
+| `email`    | string | Yes      | Max 100 chars; valid email format; unique                             |
+| `password` | string | Yes      | Min 8 chars; must contain uppercase, lowercase, digit                 |
+| `role`     | enum   | Yes      | `Admin`, `InventoryManager`, `QualityControl`, `Production`, `Viewer` |
 
 **Business Rules:**
+
 - `username` must be globally unique.
 - `email` must be globally unique.
 - Password is hashed before persistence (BCrypt).
@@ -1749,11 +1775,11 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
 
 **Errors:**
 
-| Condition | Code | Message |
-|-----------|------|---------|
-| Duplicate `username` | `409` | `"Username already exists: jdoe"` |
-| Duplicate `email` | `409` | `"Email already exists: j.doe@company.com"` |
-| Weak password | `422` | `"password: Must be at least 8 characters with uppercase, lowercase, and digit"` |
+| Condition            | Code  | Message                                                                          |
+| -------------------- | ----- | -------------------------------------------------------------------------------- |
+| Duplicate `username` | `409` | `"Username already exists: jdoe"`                                                |
+| Duplicate `email`    | `409` | `"Email already exists: j.doe@company.com"`                                      |
+| Weak password        | `422` | `"password: Must be at least 8 characters with uppercase, lowercase, and digit"` |
 
 ---
 
@@ -1806,6 +1832,7 @@ Reporting endpoints provide real-time inventory visibility and compliance data. 
 **Required roles:** `Admin`
 
 **Business Rules:**
+
 - Cannot deactivate your own account.
 - Cannot deactivate the last active Admin.
 
@@ -1857,16 +1884,16 @@ GET /api/v1/health
 
 Every state-changing request is automatically logged. The audit log captures:
 
-| Field | Source |
-|-------|--------|
-| `userId` | JWT `sub` claim |
-| `username` | JWT `preferred_username` claim |
-| `action` | Determined by controller method |
-| `entityType` | Module name |
-| `entityId` | Primary key of affected entity |
-| `timestamp` | Server time at execution |
-| `ipAddress` | Client IP from HTTP header |
-| `requestBody` | Sanitized (passwords redacted) |
+| Field         | Source                          |
+| ------------- | ------------------------------- |
+| `userId`      | JWT `sub` claim                 |
+| `username`    | JWT `preferred_username` claim  |
+| `action`      | Determined by controller method |
+| `entityType`  | Module name                     |
+| `entityId`    | Primary key of affected entity  |
+| `timestamp`   | Server time at execution        |
+| `ipAddress`   | Client IP from HTTP header      |
+| `requestBody` | Sanitized (passwords redacted)  |
 
 ### 12.3 CORS Configuration
 
@@ -1883,12 +1910,13 @@ registry.addMapping("/api/**")
 
 ### 12.4 Request Size Limits
 
-| Content | Limit |
-|---------|-------|
-| JSON body | 2 MB |
+| Content                 | Limit                   |
+| ----------------------- | ----------------------- |
+| JSON body               | 2 MB                    |
 | `templateContent` field | Unlimited (TEXT column) |
 
 Configure in `application.properties`:
+
 ```properties
 spring.servlet.multipart.max-file-size=10MB
 spring.servlet.multipart.max-request-size=10MB
@@ -1897,6 +1925,7 @@ spring.servlet.multipart.max-request-size=10MB
 ### 12.5 Rate Limiting (Production Recommendation)
 
 Implement via API Gateway or Spring Rate Limiter:
+
 - Unauthenticated: 20 requests/minute per IP
 - Authenticated: 300 requests/minute per user
 
@@ -1913,52 +1942,52 @@ Implement via API Gateway or Spring Rate Limiter:
 
 `✅` = allowed, `🔐` = own data only, `❌` = forbidden
 
-| Endpoint | Admin | InventoryManager | QualityControl | Production | Viewer |
-|----------|-------|-----------------|----------------|------------|--------|
-| **Materials** | | | | | |
-| GET /materials | ✅ | ✅ | ✅ | ✅ | ✅ |
-| POST /materials | ✅ | ✅ | ❌ | ❌ | ❌ |
-| PUT /materials/{id} | ✅ | ✅ | ❌ | ❌ | ❌ |
-| DELETE /materials/{id} | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Inventory Lots** | | | | | |
-| GET /lots | ✅ | ✅ | ✅ | ✅ | ✅ |
-| POST /lots/receive | ✅ | ✅ | ❌ | ❌ | ❌ |
-| PATCH /lots/{id}/status | ✅ | ✅ | ❌ | ❌ | ❌ |
-| POST /lots/{id}/split | ✅ | ✅ | ✅ | ❌ | ❌ |
-| POST /lots/{id}/adjust | ✅ | ✅ | ❌ | ❌ | ❌ |
-| POST /lots/{id}/transfer | ✅ | ✅ | ❌ | ❌ | ❌ |
-| POST /lots/{id}/dispose | ✅ | ✅ | ❌ | ❌ | ❌ |
-| GET /lots/{id}/transactions | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **QC Testing** | | | | | |
-| GET /qctests | ✅ | ✅ | ✅ | ✅ | ✅ |
-| POST /qctests | ✅ | ❌ | ✅ | ❌ | ❌ |
-| PUT /qctests/{id} | ✅ | ❌ | ✅ | ❌ | ❌ |
-| GET /qctests/summary | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Production Batches** | | | | | |
-| GET /batches | ✅ | ✅ | ✅ | ✅ | ✅ |
-| POST /batches | ✅ | ✅ | ❌ | ✅ | ❌ |
-| PATCH /batches/{id}/status | ✅ | ❌ | ❌ | ✅ | ❌ |
-| POST /batches/{id}/components | ✅ | ✅ | ❌ | ✅ | ❌ |
-| PATCH /batches/components/{id}/confirm | ✅ | ✅ | ❌ | ✅ | ❌ |
-| **Labels** | | | | | |
-| GET /labels/templates | ✅ | ✅ | ✅ | ✅ | ✅ |
-| POST /labels/templates | ✅ | ❌ | ❌ | ❌ | ❌ |
-| PUT /labels/templates/{id} | ✅ | ❌ | ❌ | ❌ | ❌ |
-| DELETE /labels/templates/{id} | ✅ | ❌ | ❌ | ❌ | ❌ |
-| POST /labels/generate | ✅ | ✅ | ✅ | ✅ | ❌ |
-| **Reports** | | | | | |
-| GET /reports/dashboard | ✅ | ✅ | ✅ | ✅ | ✅ |
-| GET /reports/near-expiry | ✅ | ✅ | ✅ | ✅ | ✅ |
-| GET /reports/lots/{id}/trace | ✅ | ✅ | ✅ | ✅ | ✅ |
-| GET /reports/qc | ✅ | ✅ | ✅ | ❌ | ❌ |
-| GET /reports/inventory | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Users** | | | | | |
-| GET /users | ✅ | ❌ | ❌ | ❌ | ❌ |
-| GET /users/me | ✅ | ✅ | ✅ | ✅ | ✅ |
-| POST /users | ✅ | ❌ | ❌ | ❌ | ❌ |
-| PUT /users/{id} | ✅ | ❌ | ❌ | ❌ | ❌ |
-| PATCH /users/{id}/password | ✅ | 🔐 | 🔐 | 🔐 | 🔐 |
-| DELETE /users/{id} | ✅ | ❌ | ❌ | ❌ | ❌ |
-| GET /users/{id}/activity | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Health** | | | | | |
-| GET /health | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Endpoint                               | Admin | InventoryManager | QualityControl | Production | Viewer |
+| -------------------------------------- | ----- | ---------------- | -------------- | ---------- | ------ |
+| **Materials**                          |       |                  |                |            |        |
+| GET /materials                         | ✅    | ✅               | ✅             | ✅         | ✅     |
+| POST /materials                        | ✅    | ✅               | ❌             | ❌         | ❌     |
+| PUT /materials/{id}                    | ✅    | ✅               | ❌             | ❌         | ❌     |
+| DELETE /materials/{id}                 | ✅    | ❌               | ❌             | ❌         | ❌     |
+| **Inventory Lots**                     |       |                  |                |            |        |
+| GET /lots                              | ✅    | ✅               | ✅             | ✅         | ✅     |
+| POST /lots/receive                     | ✅    | ✅               | ❌             | ❌         | ❌     |
+| PATCH /lots/{id}/status                | ✅    | ✅               | ❌             | ❌         | ❌     |
+| POST /lots/{id}/split                  | ✅    | ✅               | ✅             | ❌         | ❌     |
+| POST /lots/{id}/adjust                 | ✅    | ✅               | ❌             | ❌         | ❌     |
+| POST /lots/{id}/transfer               | ✅    | ✅               | ❌             | ❌         | ❌     |
+| POST /lots/{id}/dispose                | ✅    | ✅               | ❌             | ❌         | ❌     |
+| GET /lots/{id}/transactions            | ✅    | ✅               | ✅             | ✅         | ✅     |
+| **QC Testing**                         |       |                  |                |            |        |
+| GET /qctests                           | ✅    | ✅               | ✅             | ✅         | ✅     |
+| POST /qctests                          | ✅    | ❌               | ✅             | ❌         | ❌     |
+| PUT /qctests/{id}                      | ✅    | ❌               | ✅             | ❌         | ❌     |
+| GET /qctests/summary                   | ✅    | ✅               | ✅             | ✅         | ✅     |
+| **Production Batches**                 |       |                  |                |            |        |
+| GET /batches                           | ✅    | ✅               | ✅             | ✅         | ✅     |
+| POST /batches                          | ✅    | ✅               | ❌             | ✅         | ❌     |
+| PATCH /batches/{id}/status             | ✅    | ❌               | ❌             | ✅         | ❌     |
+| POST /batches/{id}/components          | ✅    | ✅               | ❌             | ✅         | ❌     |
+| PATCH /batches/components/{id}/confirm | ✅    | ✅               | ❌             | ✅         | ❌     |
+| **Labels**                             |       |                  |                |            |        |
+| GET /labels/templates                  | ✅    | ✅               | ✅             | ✅         | ✅     |
+| POST /labels/templates                 | ✅    | ❌               | ❌             | ❌         | ❌     |
+| PUT /labels/templates/{id}             | ✅    | ❌               | ❌             | ❌         | ❌     |
+| DELETE /labels/templates/{id}          | ✅    | ❌               | ❌             | ❌         | ❌     |
+| POST /labels/generate                  | ✅    | ✅               | ✅             | ✅         | ❌     |
+| **Reports**                            |       |                  |                |            |        |
+| GET /reports/dashboard                 | ✅    | ✅               | ✅             | ✅         | ✅     |
+| GET /reports/near-expiry               | ✅    | ✅               | ✅             | ✅         | ✅     |
+| GET /reports/lots/{id}/trace           | ✅    | ✅               | ✅             | ✅         | ✅     |
+| GET /reports/qc                        | ✅    | ✅               | ✅             | ❌         | ❌     |
+| GET /reports/inventory                 | ✅    | ✅               | ✅             | ✅         | ✅     |
+| **Users**                              |       |                  |                |            |        |
+| GET /users                             | ✅    | ❌               | ❌             | ❌         | ❌     |
+| GET /users/me                          | ✅    | ✅               | ✅             | ✅         | ✅     |
+| POST /users                            | ✅    | ❌               | ❌             | ❌         | ❌     |
+| PUT /users/{id}                        | ✅    | ❌               | ❌             | ❌         | ❌     |
+| PATCH /users/{id}/password             | ✅    | 🔐               | 🔐             | 🔐         | 🔐     |
+| DELETE /users/{id}                     | ✅    | ❌               | ❌             | ❌         | ❌     |
+| GET /users/{id}/activity               | ✅    | ❌               | ❌             | ❌         | ❌     |
+| **Health**                             |       |                  |                |            |        |
+| GET /health                            | ✅    | ✅               | ✅             | ✅         | ✅     |
