@@ -17,19 +17,19 @@ CREATE TABLE Users (
 
 -- 2. Materials Table
 CREATE TABLE Materials (
-    material_id VARCHAR(20) PRIMARY KEY,
-    part_number VARCHAR(20) NOT NULL UNIQUE,
-    material_name VARCHAR(100) NOT NULL,
+    material_id VARCHAR(36) PRIMARY KEY,
+    part_number VARCHAR(50) NOT NULL UNIQUE,
+    material_name VARCHAR(200) NOT NULL,
     material_type ENUM('API', 'Excipient', 'Dietary Supplement', 'Container', 'Closure', 'Process Chemical', 'Testing Material') NOT NULL,
-    storage_conditions VARCHAR(100) NULL,
-    specification_document VARCHAR(50) NULL,
+    storage_conditions VARCHAR(255) NULL,
+    specification_document VARCHAR(500) NULL,
     created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     modified_date DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- 3. LabelTemplates Table
 CREATE TABLE LabelTemplates (
-    template_id VARCHAR(20) PRIMARY KEY,
+    template_id VARCHAR(36) PRIMARY KEY,
     template_name VARCHAR(100) NOT NULL,
     label_type ENUM('Raw Material', 'Sample', 'Intermediate', 'Finished Product', 'API', 'Status') NOT NULL,
     template_content TEXT NOT NULL,
