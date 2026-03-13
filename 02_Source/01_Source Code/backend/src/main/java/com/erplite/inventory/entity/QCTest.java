@@ -1,6 +1,8 @@
 package com.erplite.inventory.entity;
 
 import com.erplite.inventory.converter.TestTypeConverter;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -70,7 +72,29 @@ public class QCTest {
     }
 
     public enum TestType {
-        IDENTITY, PURITY, POTENCY, MICROBIAL, GROWTH_PROMOTION, APPEARANCE, OTHER
+        IDENTITY("Identity"),
+        POTENCY("Potency"),
+        MICROBIAL("Microbial"),
+        GROWTH_PROMOTION("Growth Promotion"),
+        PHYSICAL("Physical"),
+        CHEMICAL("Chemical");
+
+        private final String dbValue;
+
+        TestType(String dbValue) {
+            this.dbValue = dbValue;
+        }
+
+        @JsonValue
+        public String getDbValue() { return dbValue; }
+
+        @JsonCreator
+        public static TestType fromJson(String value) {
+            for (TestType t : values()) {
+                if (t.dbValue.equals(value) || t.name().equals(value)) return t;
+            }
+            throw new IllegalArgumentException("Unknown TestType: " + value);
+        }
     }
 
     public enum ResultStatus {

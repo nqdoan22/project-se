@@ -538,7 +538,7 @@ export default function BatchesPage() {
   const flash = (msg) => { setSuccessMsg(msg); setTimeout(() => setSuccessMsg(''), 3000); };
 
   useEffect(() => {
-    lotApi.getAll().then((r) => setLots(r.data)).catch(() => {});
+    lotApi.getAll().then((r) => setLots(r.data?.content ?? [])).catch(() => {});
   }, []);
 
   const loadBatches = useCallback(async () => {

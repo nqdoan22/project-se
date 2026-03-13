@@ -1,6 +1,8 @@
 package com.erplite.inventory.entity;
 
 import com.erplite.inventory.converter.BatchStatusConverter;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -44,7 +46,7 @@ public class ProductionBatch {
     @Builder.Default
     @Convert(converter = BatchStatusConverter.class)
     @Column(name = "status", nullable = false, length = 15)
-    private BatchStatus status = BatchStatus.IN_PROGRESS;
+    private BatchStatus status = BatchStatus.PLANNED;
 
     @Builder.Default
     @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -63,7 +65,7 @@ public class ProductionBatch {
         }
         createdDate = LocalDateTime.now();
         modifiedDate = LocalDateTime.now();
-        if (status == null) status = BatchStatus.IN_PROGRESS;
+        if (status == null) status = BatchStatus.PLANNED;
     }
 
     @PreUpdate
@@ -72,6 +74,30 @@ public class ProductionBatch {
     }
 
     public enum BatchStatus {
-        IN_PROGRESS, COMPLETED, CANCELLED, ON_HOLD
+        PLANNED("Planned", "Planned"),
+        IN_PROGRESS("In Progress", "InProgress"),
+        COMPLETE("Complete", "Complete"),
+        REJECTED("Rejected", "Rejected");
+
+        private final String dbValue;
+        private final String jsonValue;
+
+        BatchStatus(String dbValue, String jsonValue) {
+            this.dbValue = dbValue;
+            this.jsonValue = jsonValue;
+        }
+
+        public String getDbValue() { return dbValue; }
+
+        @JsonValue
+        public String getJsonValue() { return jsonValue; }
+
+        @JsonCreator
+        public static BatchStatus fromJson(String value) {
+            for (BatchStatus s : values()) {
+                if (s.jsonValue.equals(value) || s.name().equals(value)) return s;
+            }
+            throw new IllegalArgumentException("Unknown BatchStatus: " + value);
+        }
     }
 }

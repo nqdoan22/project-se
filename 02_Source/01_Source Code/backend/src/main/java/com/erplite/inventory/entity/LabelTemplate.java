@@ -1,6 +1,8 @@
 package com.erplite.inventory.entity;
 
 import com.erplite.inventory.converter.LabelTypeConverter;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -52,6 +54,28 @@ public class LabelTemplate {
     }
 
     public enum LabelType {
-        RAW_MATERIAL, FINISHED_PRODUCT, SAMPLE, QUARANTINE
+        RAW_MATERIAL("Raw Material"),
+        SAMPLE("Sample"),
+        INTERMEDIATE("Intermediate"),
+        FINISHED_PRODUCT("Finished Product"),
+        API("API"),
+        STATUS("Status");
+
+        private final String dbValue;
+
+        LabelType(String dbValue) {
+            this.dbValue = dbValue;
+        }
+
+        @JsonValue
+        public String getDbValue() { return dbValue; }
+
+        @JsonCreator
+        public static LabelType fromJson(String value) {
+            for (LabelType t : values()) {
+                if (t.dbValue.equals(value) || t.name().equals(value)) return t;
+            }
+            throw new IllegalArgumentException("Unknown LabelType: " + value);
+        }
     }
 }

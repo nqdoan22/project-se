@@ -1,0 +1,48 @@
+services:
+
+  # ── Keycloak ────────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "9090:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ── Backend (Spring Boot) ────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env          # real credentials — never committed
+    environment:
+      # Override Keycloak URIs to use the Docker service name internally.
+      # The issuer in the JWT token is still http://localhost:9090 (browser-issued),
+      # so we disable issuer validation via spring.security.oauth2.resourceserver.jwt.issuer-uri
+      # and rely solely on the JWK set URI for signature verification.
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/ims
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ims/protocol/openid-connect/certs
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  # ── Frontend (React + nginx) ─────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # These URLs are accessed from the user's browser, so use localhost / public host
+        VITE_API_BASE: http://localhost:8080/api/v1
+        VITE_KEYCLOAK_URL: http://localhost:9090
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
