@@ -42,7 +42,7 @@ CREATE TABLE LabelTemplates (
 -- 4. InventoryLots Table
 CREATE TABLE InventoryLots (
     lot_id VARCHAR(36) PRIMARY KEY,
-    material_id VARCHAR(20) NOT NULL,
+    material_id VARCHAR(36) NOT NULL,
     manufacturer_name VARCHAR(100) NOT NULL,
     manufacturer_lot VARCHAR(50) NOT NULL,
     supplier_name VARCHAR(100) NULL,

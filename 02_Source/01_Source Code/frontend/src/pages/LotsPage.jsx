@@ -26,7 +26,9 @@ function ReceiveLotForm({ materials, onSubmit, onClose, loading, error }) {
   const today = new Date().toISOString().split('T')[0];
   const [form, setForm] = useState({
     materialId: '',
+    manufacturerName: '',
     manufacturerLot: '',
+    supplierName:'',
     quantity: '',
     unitOfMeasure: 'kg',
     receivedDate: today,
@@ -59,13 +61,38 @@ function ReceiveLotForm({ materials, onSubmit, onClose, loading, error }) {
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Mã lô nhà sản xuất</label>
+            <label className="form-label required">Mã lô nhà sản xuất</label>
             <input
               className="form-control"
               value={form.manufacturerLot}
               onChange={(e) => set('manufacturerLot', e.target.value)}
               placeholder="VD: LOT-A01"
               id="lot-manufacturerLot"
+              maxLength={99}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label required">Tên nhà sản xuất</label>
+            <input
+              className="form-control"
+              value={form.manufacturerName}
+              onChange={(e) => set('manufacturerName', e.target.value)}
+              placeholder="VD: Công ty XYZ"
+              id="lot-manufacturerName"
+              required
+              maxLength={99}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Tên nhà cung cấp</label>
+            <input
+              className="form-control"
+              value={form.supplierName}
+              onChange={(e) => set('supplierName', e.target.value)}
+              placeholder="VD: Công ty phân phối ABC"
+              id="lot-supplierName"
+              maxLength={99}
             />
           </div>
           <div className="form-group">
@@ -104,23 +131,25 @@ function ReceiveLotForm({ materials, onSubmit, onClose, loading, error }) {
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Ngày nhận</label>
+            <label className="form-label required">Ngày nhận</label>
             <input
               className="form-control"
               type="date"
               value={form.receivedDate}
               onChange={(e) => set('receivedDate', e.target.value)}
               id="lot-receivedDate"
+              required
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Ngày hết hạn</label>
+            <label className="form-label required">Ngày hết hạn</label>
             <input
               className="form-control"
               type="date"
               value={form.expirationDate}
               onChange={(e) => set('expirationDate', e.target.value)}
               id="lot-expirationDate"
+              required
             />
           </div>
           <div className="form-group">
