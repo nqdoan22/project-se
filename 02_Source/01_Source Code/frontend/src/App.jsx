@@ -12,7 +12,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-layout">
-        <h1>Hello World</h1>
+        <h1>Hello World
         <Sidebar />
         <main className="main-content">
           <Routes>
