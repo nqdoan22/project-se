@@ -12,14 +12,14 @@
 #### Tasks
 
 - Backend
-    - Add entity and repository for batch components
-    - Create controller to handle routes for batch components: create, update, delete, view for specific production batch, view all (grouped by batch)
-    - Update ProductionBatchController route that handles status changes to write inventory transactions based on its batch components
+    - Add entity and repository for batch components - exists
+    - Create controller to handle routes for batch components: create, update, delete, view for specific production batch, view all (grouped by batch) - OK
+    - Update ProductionBatchController route that handles status changes to write inventory transactions based on its batch components - 
 - Frontend
-    - Add batch components tab
-        - Can filter by production batch
-        - Optional: can filter by material
-        - Modal to add new / update component
+    - Add batch components tab - OK
+        - Can filter by production batch - OK
+        - Optional: can filter by material - OK
+        - Modal to add new / update component - OK
             - Show error if the user tries to use a quantity more than available
     - In the production batch tab, in the details modal for a batch, show current batch components
         - Add button to redirect to add new component (set production batch ID to currently viewed batch)

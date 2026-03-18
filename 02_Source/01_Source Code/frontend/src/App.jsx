@@ -4,6 +4,7 @@ import MaterialsPage from "./pages/MaterialsPage";
 import LotsPage from "./pages/LotsPage";
 import QCTestsPage from "./pages/QCTestsPage";
 import BatchesPage from "./pages/BatchesPage";
+import BatchComponentsPage from "./pages/BatchComponentsPage";
 import LabelsPage from "./pages/LabelsPage";
 import DashboardPage from "./pages/DashboardPage";
 import UsersPage from "./pages/UsersPage";
@@ -12,7 +13,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-layout">
-        <h1>Hello World 1234
         <Sidebar />
         <main className="main-content">
           <Routes>
@@ -21,6 +21,7 @@ export default function App() {
             <Route path="/lots" element={<LotsPage />} />
             <Route path="/qctests" element={<QCTestsPage />} />
             <Route path="/batches" element={<BatchesPage />} />
+            <Route path="/components" element={<BatchComponentsPage />} />
             <Route path="/labels" element={<LabelsPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/users" element={<UsersPage />} />

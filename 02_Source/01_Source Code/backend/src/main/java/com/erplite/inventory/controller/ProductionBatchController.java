@@ -79,4 +79,23 @@ public class ProductionBatchController {
         }
         return ResponseEntity.ok(batchService.confirmComponent(componentId, req));
     }
+
+    @PatchMapping("/components/{componentId}")
+    @PreAuthorize("hasAnyRole('Admin','InventoryManager','Production')")
+    public ResponseEntity<ComponentResponse> updateComponent(
+            @PathVariable String componentId,
+            @Valid @RequestBody BatchComponentRequest req,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (req.getAddedBy() == null && jwt != null) {
+            req.setAddedBy(jwt.getClaimAsString("preferred_username"));
+        }
+        return ResponseEntity.ok(batchService.updateComponent(componentId, req));
+    }
+
+    @DeleteMapping("/components/{componentId}")
+    @PreAuthorize("hasAnyRole('Admin','InventoryManager','Production')")
+    public ResponseEntity<Void> deleteComponent(@PathVariable String componentId) {
+        batchService.deleteComponent(componentId);
+        return ResponseEntity.noContent().build();
+    }
 }

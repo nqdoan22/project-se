@@ -82,6 +82,9 @@ public class ProductionBatchService {
     @Transactional
     public ComponentResponse addComponent(String batchId, BatchComponentRequest req) {
         ProductionBatch batch = findBatchOrThrow(batchId);
+        if (batch.getStatus() != BatchStatus.PLANNED) {
+            throw new BusinessException("Cannot add component to batch with status: " + batch.getStatus());
+        }
         InventoryLot lot = lotRepository.findById(req.getLotId())
             .orElseThrow(() -> new ResourceNotFoundException("InventoryLot", "id", req.getLotId()));
         BatchComponent component = BatchComponent.builder()
@@ -120,5 +123,35 @@ public class ProductionBatchService {
     private ProductionBatch findBatchOrThrow(String id) {
         return batchRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("ProductionBatch", "id", id));
+    }
+
+    @Transactional
+    public void deleteComponent(String componentId) {
+        BatchComponent component = componentRepository.findById(componentId)
+            .orElseThrow(() -> new ResourceNotFoundException("BatchComponent", "id", componentId));
+        if (component.getActualQuantity() != null) {
+            throw new BusinessException("Cannot delete component that has been confirmed");
+        }
+        ProductionBatch batch = component.getBatch();
+        if (batch.getStatus() != BatchStatus.PLANNED) {
+            throw new BusinessException("Cannot delete component from batch with status: " + batch.getStatus());
+        }
+        componentRepository.delete(component);
+    }
+
+    @Transactional
+    public ComponentResponse updateComponent(String componentId, BatchComponentRequest req) {
+        BatchComponent component = componentRepository.findById(componentId)
+            .orElseThrow(() -> new ResourceNotFoundException("BatchComponent", "id", componentId));
+        if (component.getActualQuantity() != null) {
+            throw new BusinessException("Cannot modify component that has been confirmed");
+        }
+        ProductionBatch batch = component.getBatch();
+        if (batch.getStatus() != BatchStatus.PLANNED) {
+            throw new BusinessException("Cannot modify component in batch with status: " + batch.getStatus());
+        }
+        component.setPlannedQuantity(req.getPlannedQuantity());
+        component.setUnitOfMeasure(req.getUnitOfMeasure());
+        return ComponentResponse.from(componentRepository.save(component));
     }
 }

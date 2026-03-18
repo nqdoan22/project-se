@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { batchApi, lotApi } from '../services/api';
 import Modal from '../components/Modal';
+import { AddComponentForm, ConfirmUsageModal, ModifyComponentForm, DeleteConfirmationModal } from './BatchComponentsActions';
 
 const BATCH_STATUSES = ['Planned', 'InProgress', 'Complete', 'Rejected'];
 
@@ -138,135 +139,6 @@ function CreateBatchForm({ onSubmit, onClose, loading, error }) {
   );
 }
 
-function AddComponentForm({ batchId, lots, onSubmit, onClose, loading, error }) {
-  const [form, setForm] = useState({
-    lotId: '',
-    plannedQuantity: '',
-    unitOfMeasure: '',
-    addedBy: '',
-  });
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  const acceptedLots = lots.filter((l) => l.status === 'Accepted');
-
-  return (
-    <form onSubmit={(e) => {
-      e.preventDefault();
-      onSubmit({ ...form, plannedQuantity: parseFloat(form.plannedQuantity) });
-    }}>
-      <div className="modal-body">
-        {error && <div className="alert alert-error">⚠ {error}</div>}
-        <div className="form-grid">
-          <div className="form-group form-full">
-            <label className="form-label required">Lô nguyên liệu (Accepted)</label>
-            <select
-              className="form-control"
-              value={form.lotId}
-              onChange={(e) => set('lotId', e.target.value)}
-              required
-              id="comp-lotId"
-            >
-              <option value="">-- Chọn lô nguyên liệu --</option>
-              {acceptedLots.map((l) => (
-                <option key={l.lotId} value={l.lotId}>
-                  {l.partNumber} — {l.materialName} | SL: {l.quantity} {l.unitOfMeasure}
-                </option>
-              ))}
-            </select>
-            {acceptedLots.length === 0 && (
-              <span className="form-error">Không có lô nào ở trạng thái Accepted</span>
-            )}
-          </div>
-          <div className="form-group">
-            <label className="form-label required">Số lượng kế hoạch</label>
-            <input
-              className="form-control"
-              type="number"
-              min="0.001"
-              step="0.001"
-              value={form.plannedQuantity}
-              onChange={(e) => set('plannedQuantity', e.target.value)}
-              placeholder="VD: 100"
-              required
-              id="comp-plannedQty"
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label required">Đơn vị</label>
-            <input
-              className="form-control"
-              value={form.unitOfMeasure}
-              onChange={(e) => set('unitOfMeasure', e.target.value)}
-              placeholder="kg / L / pcs"
-              required
-              id="comp-uom"
-            />
-          </div>
-          <div className="form-group form-full">
-            <label className="form-label">Người thêm</label>
-            <input
-              className="form-control"
-              value={form.addedBy}
-              onChange={(e) => set('addedBy', e.target.value)}
-              placeholder="VD: operator01"
-              id="comp-addedBy"
-            />
-          </div>
-        </div>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading}>Huỷ</button>
-        <button type="submit" className="btn btn-primary" disabled={loading} id="btn-submit-component">
-          {loading ? '⏳ Đang thêm...' : '➕ Thêm nguyên liệu'}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function ConfirmUsageModal({ component, onSubmit, onClose, loading, error }) {
-  const [actualQuantity, setActualQuantity] = useState(component.plannedQuantity?.toString() || '');
-
-  return (
-    <Modal
-      title="✔ Xác nhận lượng sử dụng thực tế"
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn btn-outline" onClick={onClose} disabled={loading}>Huỷ</button>
-          <button
-            id="btn-confirm-usage"
-            className="btn btn-primary"
-            disabled={loading || !actualQuantity}
-            onClick={() => onSubmit(parseFloat(actualQuantity))}
-          >
-            {loading ? 'Đang xác nhận...' : '✔ Xác nhận'}
-          </button>
-        </>
-      }
-    >
-      {error && <div className="alert alert-error">⚠ {error}</div>}
-      <p style={{ marginBottom: 12 }}>
-        Nguyên liệu: <strong>{component.materialName}</strong> ({component.partNumber || 'N/A'})
-      </p>
-      <p style={{ marginBottom: 16 }} className="text-muted">
-        Số lượng kế hoạch: <strong>{component.plannedQuantity} {component.unitOfMeasure}</strong>
-      </p>
-      <div className="form-group">
-        <label className="form-label required">Số lượng thực tế sử dụng</label>
-        <input
-          className="form-control"
-          type="number"
-          min="0"
-          step="0.001"
-          value={actualQuantity}
-          onChange={(e) => setActualQuantity(e.target.value)}
-          id="actual-quantity"
-        />
-      </div>
-    </Modal>
-  );
-}
-
 function UpdateStatusModal({ batch, onSubmit, onClose, loading, error }) {
   const [newStatus, setNewStatus] = useState(batch.status);
 
@@ -313,6 +185,8 @@ function BatchDetailModal({ batchId, lots, onClose }) {
   const [error, setError] = useState('');
   const [addCompTarget, setAddCompTarget] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [modifyTarget, setModifyTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [statusTarget, setStatusTarget] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -349,16 +223,46 @@ function BatchDetailModal({ batchId, lots, onClose }) {
     }
   };
 
-  const handleConfirmUsage = async (actualQuantity) => {
+  const handleConfirmUsage = async (actualQuantity, performedBy) => {
     setActionLoading(true);
     setActionError('');
     try {
-      await batchApi.confirmComponent(confirmTarget.componentId, actualQuantity);
+      await batchApi.confirmComponent(confirmTarget.componentId, actualQuantity, performedBy);
       setConfirmTarget(null);
       flash('✅ Đã xác nhận số lượng sử dụng');
       loadBatch();
     } catch (e) {
       setActionError(e.response?.data?.message ?? 'Xác nhận thất bại');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleModifyComponent = async (form) => {
+    setActionLoading(true);
+    setActionError('');
+    try {
+      await batchApi.updateComponent(modifyTarget.componentId, form);
+      setModifyTarget(null);
+      flash('✅ Đã cập nhật nguyên liệu');
+      loadBatch();
+    } catch (e) {
+      setActionError(e.response?.data?.message ?? 'Cập nhật nguyên liệu thất bại');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteComponent = async () => {
+    setActionLoading(true);
+    setActionError('');
+    try {
+      await batchApi.deleteComponent(deleteTarget.componentId);
+      setDeleteTarget(null);
+      flash('✅ Đã xóa nguyên liệu khỏi lô sản xuất');
+      loadBatch();
+    } catch (e) {
+      setActionError(e.response?.data?.message ?? 'Xóa nguyên liệu thất bại');
     } finally {
       setActionLoading(false);
     }
@@ -420,12 +324,18 @@ function BatchDetailModal({ batchId, lots, onClose }) {
           </div>
 
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 4 }}>
+            {batch.status !== 'Planned' && (
+              <div className="alert alert-warning" style={{ marginBottom: 16 }}>
+                ⚠️ Chỉ có thể thêm/sửa/xóa nguyên liệu khi lô còn ở trạng thái "Planned"
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span className="detail-panel-title">
                 Nguyên liệu ({batch.confirmedComponentCount ?? 0}/{batch.componentCount ?? 0} đã xác nhận)
               </span>
               <button
                 className="btn btn-outline btn-sm"
+                disabled={batch.status !== 'Planned'}
                 onClick={() => { setActionError(''); setAddCompTarget(batch); }}
               >➕ Thêm nguyên liệu</button>
             </div>
@@ -462,7 +372,7 @@ function BatchDetailModal({ batchId, lots, onClose }) {
                         </td>
                         <td>{c.addedBy || <span className="text-muted">—</span>}</td>
                         <td>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                             {c.actualQuantity == null && (
                               <button
                                 id={`btn-confirm-comp-${c.componentId}`}
@@ -470,6 +380,19 @@ function BatchDetailModal({ batchId, lots, onClose }) {
                                 onClick={() => { setActionError(''); setConfirmTarget(c); }}
                               >✔ Xác nhận</button>
                             )}
+                            <button
+                              id={`btn-edit-comp-${c.componentId}`}
+                              className="btn btn-outline btn-sm"
+                              disabled={batch.status !== 'Planned'}
+                              onClick={() => { setActionError(''); setModifyTarget(c); }}
+                            >✏️ Sửa</button>
+                            <button
+                              id={`btn-delete-comp-${c.componentId}`}
+                              className="btn btn-outline btn-sm"
+                              disabled={batch.status !== 'Planned'}
+                              onClick={() => { setActionError(''); setDeleteTarget(c); }}
+                              style={{ color: 'var(--error)' }}
+                            >🗑️ Xóa</button>
                           </div>
                         </td>
                       </tr>
@@ -514,6 +437,29 @@ function BatchDetailModal({ batchId, lots, onClose }) {
           batch={statusTarget}
           onSubmit={handleStatusUpdate}
           onClose={() => setStatusTarget(null)}
+          loading={actionLoading}
+          error={actionError}
+        />
+      )}
+
+      {modifyTarget && (
+        <Modal title="✏️ Chỉnh sửa nguyên liệu" onClose={() => setModifyTarget(null)} size="modal-lg">
+          <ModifyComponentForm
+            component={modifyTarget}
+            lots={lots}
+            onSubmit={handleModifyComponent}
+            onClose={() => setModifyTarget(null)}
+            loading={actionLoading}
+            error={actionError}
+          />
+        </Modal>
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmationModal
+          component={deleteTarget}
+          onConfirm={handleDeleteComponent}
+          onCancel={() => setDeleteTarget(null)}
           loading={actionLoading}
           error={actionError}
         />
