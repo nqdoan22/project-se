@@ -351,6 +351,7 @@ function BatchDetailModal({ batchId, lots, onClose }) {
                     <tr>
                       <th>Tên nguyên liệu</th>
                       <th>Part Number</th>
+                      <th>Lot ID</th>
                       <th>Trạng thái lô</th>
                       <th>SL kế hoạch</th>
                       <th>SL thực tế</th>
@@ -363,6 +364,7 @@ function BatchDetailModal({ batchId, lots, onClose }) {
                       <tr key={c.componentId}>
                         <td className="td-primary">{c.materialName}</td>
                         <td className="td-mono">{c.partNumber || '—'}</td>
+                        <td className="td-mono">{c.lotId || '—'}</td>
                         <td>{c.lotStatus || <span className="text-muted">—</span>}</td>
                         <td>{c.plannedQuantity} <span className="text-muted">{c.unitOfMeasure}</span></td>
                         <td>

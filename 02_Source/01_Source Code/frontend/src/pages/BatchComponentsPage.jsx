@@ -13,17 +13,28 @@ function AddComponentToBatchForm({ batches, lots, onSubmit, onClose, loading, er
     unitOfMeasure: '',
     addedBy: '',
   });
+  const [validationError, setValidationError] = useState('');
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const acceptedLots = lots.filter((l) => l.status === 'Accepted');
   const plannedBatches = batches.filter((b) => b.status === 'Planned');
+  
+  const selectedLot = form.lotId ? acceptedLots.find((l) => l.lotId === form.lotId) : null;
+  const remainingQuantity = selectedLot?.quantity ?? 0;
+  const plannedQty = parseFloat(form.plannedQuantity) || 0;
+  const exceedsLimit = plannedQty > remainingQuantity && form.plannedQuantity !== '';
 
   return (
     <form onSubmit={(e) => {
       e.preventDefault();
+      if (exceedsLimit) {
+        setValidationError(`Số lượng kế hoạch không thể vượt quá ${remainingQuantity} ${selectedLot?.unitOfMeasure}`);
+        return;
+      }
       onSubmit({ ...form, plannedQuantity: parseFloat(form.plannedQuantity) });
     }}>
       <div className="modal-body">
         {error && <div className="alert alert-error">⚠ {error}</div>}
+        {validationError && <div className="alert alert-error">⚠ {validationError}</div>}
         <div className="form-grid">
           <div className="form-group form-full">
             <label className="form-label required">Chọn lô sản xuất</label>
@@ -57,7 +68,7 @@ function AddComponentToBatchForm({ batches, lots, onSubmit, onClose, loading, er
               <option value="">-- Chọn lô nguyên liệu --</option>
               {acceptedLots.map((l) => (
                 <option key={l.lotId} value={l.lotId}>
-                  {l.partNumber} — {l.materialName} | SL: {l.quantity} {l.unitOfMeasure}
+                  {l.partNumber} — {l.materialName} | SL sẵn có: {l.quantity} {l.unitOfMeasure}
                 </option>
               ))}
             </select>
@@ -66,18 +77,20 @@ function AddComponentToBatchForm({ batches, lots, onSubmit, onClose, loading, er
             )}
           </div>
           <div className="form-group">
-            <label className="form-label required">Số lượng kế hoạch</label>
+            <label className="form-label required">Số lượng kế hoạch {selectedLot && `(Tối đa: ${remainingQuantity} ${selectedLot.unitOfMeasure})`}</label>
             <input
               className="form-control"
               type="number"
               min="0.001"
               step="0.001"
               value={form.plannedQuantity}
-              onChange={(e) => set('plannedQuantity', e.target.value)}
+              onChange={(e) => { setValidationError(''); set('plannedQuantity', e.target.value); }}
               placeholder="VD: 100"
               required
               id="add-comp-plannedQty"
+              style={exceedsLimit ? { borderColor: 'var(--error)' } : {}}
             />
+            {exceedsLimit && <span className="form-error">Số lượng vượt quá lượng sẵn có ({remainingQuantity} {selectedLot?.unitOfMeasure})</span>}
           </div>
           <div className="form-group">
             <label className="form-label required">Đơn vị</label>
@@ -104,7 +117,7 @@ function AddComponentToBatchForm({ batches, lots, onSubmit, onClose, loading, er
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading}>Huỷ</button>
-        <button type="submit" className="btn btn-primary" disabled={loading || plannedBatches.length === 0 || acceptedLots.length === 0} id="btn-add-component">
+        <button type="submit" className="btn btn-primary" disabled={loading || plannedBatches.length === 0 || acceptedLots.length === 0 || exceedsLimit} id="btn-add-component">
           {loading ? '⏳ Đang thêm...' : '➕ Thêm nguyên liệu'}
         </button>
       </div>
@@ -342,6 +355,7 @@ export default function BatchComponentsPage() {
                     <th>Sản phẩm</th>
                     <th>Tên nguyên liệu</th>
                     <th>Part Number</th>
+                    <th>Lot ID</th>
                     <th>Trạng thái lô</th>
                     <th>SL kế hoạch</th>
                     <th>SL thực tế</th>
@@ -359,6 +373,7 @@ export default function BatchComponentsPage() {
                       </td>
                       <td className="td-primary">{c.materialName}</td>
                       <td className="td-mono">{c.partNumber || '—'}</td>
+                      <td className="td-mono">{c.lotId || '—'}</td>
                       <td>{c.lotStatus || <span className="text-muted">—</span>}</td>
                       <td>{c.plannedQuantity} <span className="text-muted">{c.unitOfMeasure}</span></td>
                       <td>

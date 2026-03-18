@@ -94,12 +94,27 @@ export function ModifyComponentForm({ component, lots, onSubmit, onClose, loadin
     actualQuantity: component.actualQuantity?.toString() || '',
     addedBy: component.addedBy || '',
   });
+  const [validationError, setValidationError] = useState('');
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const acceptedLots = lots.filter((l) => l.status === 'Accepted');
+  const selectedLot = acceptedLots.find((l) => l.lotId === form.lotId);
+  const remainingQuantity = selectedLot?.quantity ?? 0;
+  const plannedQty = parseFloat(form.plannedQuantity) || 0;
+  const actualQty = parseFloat(form.actualQuantity) || 0;
+  const exceedsPlanned = actualQty > plannedQty && form.actualQuantity !== '';
+  const exceedsRemaining = plannedQty > remainingQuantity && form.plannedQuantity !== '';
 
   return (
     <form onSubmit={(e) => {
       e.preventDefault();
+      if (exceedsRemaining) {
+        setValidationError(`Số lượng kế hoạch không thể vượt quá ${remainingQuantity} ${selectedLot?.unitOfMeasure}`);
+        return;
+      }
+      if (exceedsPlanned) {
+        setValidationError(`Số lượng thực tế không thể vượt quá số lượng kế hoạch (${plannedQty})`);
+        return;
+      }
       onSubmit({
         ...form,
         plannedQuantity: parseFloat(form.plannedQuantity),
@@ -108,6 +123,7 @@ export function ModifyComponentForm({ component, lots, onSubmit, onClose, loadin
     }}>
       <div className="modal-body">
         {error && <div className="alert alert-error">⚠ {error}</div>}
+        {validationError && <div className="alert alert-error">⚠ {validationError}</div>}
         <div className="form-grid">
           <div className="form-group form-full">
             <label className="form-label required">Lô nguyên liệu (Accepted)</label>
@@ -128,18 +144,20 @@ export function ModifyComponentForm({ component, lots, onSubmit, onClose, loadin
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label required">Số lượng kế hoạch</label>
+            <label className="form-label required">Số lượng kế hoạch {selectedLot && `(Tối đa: ${remainingQuantity} ${selectedLot.unitOfMeasure})`}</label>
             <input
               className="form-control"
               type="number"
               min="0.001"
               step="0.001"
               value={form.plannedQuantity}
-              onChange={(e) => set('plannedQuantity', e.target.value)}
+              onChange={(e) => { setValidationError(''); set('plannedQuantity', e.target.value); }}
               placeholder="VD: 100"
               required
               id="modify-comp-plannedQty"
+              style={exceedsRemaining ? { borderColor: 'var(--error)' } : {}}
             />
+            {exceedsRemaining && <span className="form-error">Số lượng vượt quá lượng sẵn có ({remainingQuantity} {selectedLot?.unitOfMeasure})</span>}
           </div>
           <div className="form-group">
             <label className="form-label required">Đơn vị</label>
@@ -153,17 +171,19 @@ export function ModifyComponentForm({ component, lots, onSubmit, onClose, loadin
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Số lượng thực tế sử dụng</label>
+            <label className="form-label">Số lượng thực tế sử dụng {form.plannedQuantity && `(Tối đa: ${plannedQty})`}</label>
             <input
               className="form-control"
               type="number"
               min="0"
               step="0.001"
               value={form.actualQuantity}
-              onChange={(e) => set('actualQuantity', e.target.value)}
+              onChange={(e) => { setValidationError(''); set('actualQuantity', e.target.value); }}
               placeholder="VD: 95.5"
               id="modify-comp-actualQty"
+              style={exceedsPlanned ? { borderColor: 'var(--error)' } : {}}
             />
+            {exceedsPlanned && <span className="form-error">Không thể vượt quá số lượng kế hoạch ({plannedQty})</span>}
           </div>
           <div className="form-group form-full">
             <label className="form-label">Người thêm</label>
@@ -179,7 +199,7 @@ export function ModifyComponentForm({ component, lots, onSubmit, onClose, loadin
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline" onClick={onClose} disabled={loading}>Huỷ</button>
-        <button type="submit" className="btn btn-primary" disabled={loading} id="btn-modify-component">
+        <button type="submit" className="btn btn-primary" disabled={loading || exceedsRemaining || exceedsPlanned} id="btn-modify-component">
           {loading ? '⏳ Đang lưu...' : '💾 Lưu thay đổi'}
         </button>
       </div>
@@ -190,6 +210,10 @@ export function ModifyComponentForm({ component, lots, onSubmit, onClose, loadin
 export function ConfirmUsageModal({ component, onSubmit, onClose, loading, error }) {
   const [actualQuantity, setActualQuantity] = useState(component.plannedQuantity?.toString() || '');
   const [performedBy, setPerformedBy] = useState('');
+  const [validationError, setValidationError] = useState('');
+  const actualQty = parseFloat(actualQuantity) || 0;
+  const plannedQty = component.plannedQuantity || 0;
+  const exceedsPlanned = actualQty > plannedQty && actualQuantity !== '';
 
   return (
     <Modal
@@ -201,8 +225,14 @@ export function ConfirmUsageModal({ component, onSubmit, onClose, loading, error
           <button
             id="btn-confirm-usage"
             className="btn btn-primary"
-            disabled={loading || !actualQuantity}
-            onClick={() => onSubmit(parseFloat(actualQuantity), performedBy)}
+            disabled={loading || !actualQuantity || !performedBy || exceedsPlanned}
+            onClick={() => {
+              if (exceedsPlanned) {
+                setValidationError(`Số lượng thực tế không thể vượt quá số lượng kế hoạch (${plannedQty})`);
+                return;
+              }
+              onSubmit(parseFloat(actualQuantity), performedBy);
+            }}
           >
             {loading ? 'Đang xác nhận...' : '✔ Xác nhận'}
           </button>
@@ -210,6 +240,7 @@ export function ConfirmUsageModal({ component, onSubmit, onClose, loading, error
       }
     >
       {error && <div className="alert alert-error">⚠ {error}</div>}
+      {validationError && <div className="alert alert-error">⚠ {validationError}</div>}
       <p style={{ marginBottom: 12 }}>
         Nguyên liệu: <strong>{component.materialName}</strong> ({component.partNumber || 'N/A'})
       </p>
@@ -217,17 +248,19 @@ export function ConfirmUsageModal({ component, onSubmit, onClose, loading, error
         Số lượng kế hoạch: <strong>{component.plannedQuantity} {component.unitOfMeasure}</strong>
       </p>
       <div className="form-group">
-        <label className="form-label required">Số lượng thực tế sử dụng</label>
+        <label className="form-label required">Số lượng thực tế sử dụng (Tối đa: {plannedQty})</label>
         <input
           className="form-control"
           type="number"
           min="0"
           step="0.001"
           value={actualQuantity}
-          onChange={(e) => setActualQuantity(e.target.value)}
+          onChange={(e) => { setValidationError(''); setActualQuantity(e.target.value); }}
           id="actual-quantity"
           required
+          style={exceedsPlanned ? { borderColor: 'var(--error)' } : {}}
         />
+        {exceedsPlanned && <span className="form-error">Không thể vượt quá số lượng kế hoạch ({plannedQty})</span>}
       </div>
       <div className="form-group">
         <label className="form-label required">Người thực hiện</label>

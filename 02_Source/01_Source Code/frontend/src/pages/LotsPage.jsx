@@ -411,6 +411,7 @@ export default function LotsPage() {
                 <thead>
                   <tr>
                     <th>Vật tư</th>
+                    <th>Lot ID</th>
                     <th>Mã lô NSX</th>
                     <th>Số lượng</th>
                     <th>Trạng thái</th>
@@ -426,6 +427,7 @@ export default function LotsPage() {
                         <div className="td-primary">{lot.materialName}</div>
                         <div className="text-muted">{lot.partNumber}</div>
                       </td>
+                      <td className="td-mono">{lot.lotId || '—'}</td>
                       <td className="td-mono">{lot.manufacturerLot || '—'}</td>
                       <td className="td-primary">
                         {lot.quantity} <span className="text-muted">{lot.unitOfMeasure}</span>
