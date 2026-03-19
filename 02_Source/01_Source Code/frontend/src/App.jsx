@@ -12,7 +12,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-layout">
-        <h1>Hello World 1234
         <Sidebar />
         <main className="main-content">
           <Routes>
