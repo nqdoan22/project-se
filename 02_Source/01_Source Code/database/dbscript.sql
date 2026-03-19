@@ -83,7 +83,7 @@ CREATE TABLE InventoryTransactions (
 -- 6. ProductionBatches Table
 CREATE TABLE ProductionBatches (
     batch_id VARCHAR(36) PRIMARY KEY,
-    product_id VARCHAR(20) NOT NULL,
+    product_id VARCHAR(36) NOT NULL,
     batch_number VARCHAR(50) NOT NULL UNIQUE,
     batch_size DECIMAL(10,3) NOT NULL,
     unit_of_measure VARCHAR(10) NOT NULL,

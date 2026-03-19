@@ -71,8 +71,10 @@ export const batchApi = {
   create: (data) => api.post('/batches', data),
   updateStatus: (id, status) => api.patch(`/batches/${id}/status`, { status }),
   addComponent: (id, data) => api.post(`/batches/${id}/components`, data),
-  confirmComponent: (componentId, actualQuantity) =>
-    api.patch(`/batches/components/${componentId}/confirm`, { actualQuantity }),
+  updateComponent: (componentId, data) => api.patch(`/batches/components/${componentId}`, data),
+  confirmComponent: (componentId, actualQuantity, performedBy) =>
+    api.patch(`/batches/components/${componentId}/confirm`, { actualQuantity, performedBy }),
+  deleteComponent: (componentId) => api.delete(`/batches/components/${componentId}`),
 };
 
 // ─── Labels ───────────────────────────────────────────────────────────────────

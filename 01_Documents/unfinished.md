@@ -10,26 +10,27 @@
 *See dbscript.sql for database schema for BatchComponents
 
 #### Tasks
+All tasks complete
 
 - Backend
-    - Add entity and repository for batch components
-    - Create controller to handle routes for batch components: create, update, delete, view for specific production batch, view all (grouped by batch)
-    - Update ProductionBatchController route that handles status changes to write inventory transactions based on its batch components
+    - Add entity and repository for batch components - already exists
+    - Create controller to handle routes for batch components: create, update, delete, view for specific production batch, view all (grouped by batch) - OK
+    - Update ProductionBatchController route that handles status changes to write inventory transactions based on its batch components - not necessary, transaction already written when confirming component
 - Frontend
-    - Add batch components tab
-        - Can filter by production batch
-        - Optional: can filter by material
-        - Modal to add new / update component
-            - Show error if the user tries to use a quantity more than available
-    - In the production batch tab, in the details modal for a batch, show current batch components
-        - Add button to redirect to add new component (set production batch ID to currently viewed batch)
+    - Add batch components tab - OK
+        - Can filter by production batch - OK
+        - Optional: can filter by material - OK
+        - Modal to add new / update component - OK
+            - Show error if the user tries to use a quantity more than available - OK, see notes about remaining quantity in transactions section
+    - In the production batch tab, in the details modal for a batch, show current batch components - OK
+        - Add button to redirect to add new component (set production batch ID to currently viewed batch) - OK
 
 
 ### Inventory transactions
 
 - Allow InventoryManager role user to add transactions to inventory lots (not tied to production batches)
 - A transaction is tied to a specific inventory lot, and can have positive quantity for adding back to lot, or negative quantity for taking from lot
-- If taking from the lot, the quantity must not be more than the lot's remaining quantity. This quantity is calculated as `base + transactions - pending`, where `base` is the lot's initial quantity as recorded in InventoryLots, `transactions` is the total of all transactions involving this lot, and `pending` is the total quantity to be used in pending production batches, as recorded in BatchComponents
+- If taking from the lot, the quantity must not be more than the lot's remaining quantity. **UPDATED:** This quantity is calculated as the total of all transactions involving this lot (this includes the Receipt transaction with the initital quantity when the lot is imported)
 
 
 ## Tasks

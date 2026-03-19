@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,17 @@ public class ProductionBatchService {
     private final MaterialRepository materialRepository;
     private final InventoryLotRepository lotRepository;
     private final InventoryTransactionRepository transactionRepository;
+
+    private BigDecimal calculateRemainingQuantity(String lotId) {
+        InventoryLot lot = lotRepository.findById(lotId)
+            .orElseThrow(() -> new ResourceNotFoundException("InventoryLot", "id", lotId));
+        
+        BigDecimal totalTransactions = transactionRepository.findByLot_LotIdOrderByTransactionDateDesc(lotId).stream()
+            .map(tx -> tx.getQuantity())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        return totalTransactions;
+    }
 
     public PagedResponse<BatchResponse> listBatches(BatchStatus status, String productId, Pageable pageable) {
         Page<ProductionBatch> page;
@@ -82,12 +94,25 @@ public class ProductionBatchService {
     @Transactional
     public ComponentResponse addComponent(String batchId, BatchComponentRequest req) {
         ProductionBatch batch = findBatchOrThrow(batchId);
+        if (batch.getStatus() != BatchStatus.PLANNED) {
+            throw new BusinessException("Cannot add component to batch with status: " + batch.getStatus());
+        }
         InventoryLot lot = lotRepository.findById(req.getLotId())
             .orElseThrow(() -> new ResourceNotFoundException("InventoryLot", "id", req.getLotId()));
+        
+        BigDecimal remainingQuantity = calculateRemainingQuantity(req.getLotId());
+        BigDecimal plannedQty = req.getPlannedQuantity();
+        if (plannedQty.compareTo(remainingQuantity) > 0) {
+            throw new BusinessException(
+                String.format("Planned quantity (%.3f) exceeds remaining lot amount (%.3f %s)", 
+                    plannedQty, remainingQuantity, lot.getUnitOfMeasure())
+            );
+        }
+        
         BatchComponent component = BatchComponent.builder()
             .batch(batch)
             .lot(lot)
-            .plannedQuantity(req.getPlannedQuantity())
+            .plannedQuantity(plannedQty)
             .unitOfMeasure(req.getUnitOfMeasure())
             .additionDate(LocalDateTime.now())
             .addedBy(req.getAddedBy())
@@ -99,7 +124,17 @@ public class ProductionBatchService {
     public ComponentResponse confirmComponent(String componentId, ComponentConfirmRequest req) {
         BatchComponent component = componentRepository.findById(componentId)
             .orElseThrow(() -> new ResourceNotFoundException("BatchComponent", "id", componentId));
-        component.setActualQuantity(req.getActualQuantity());
+        
+        BigDecimal remainingQuantity = calculateRemainingQuantity(component.getLot().getLotId());
+        BigDecimal actualQty = req.getActualQuantity();
+        if (actualQty.compareTo(remainingQuantity) > 0) {
+            throw new BusinessException(
+                String.format("Actual quantity (%.3f) exceeds remaining lot amount (%.3f %s)", 
+                    actualQty, remainingQuantity, component.getLot().getUnitOfMeasure())
+            );
+        }
+        
+        component.setActualQuantity(actualQty);
         component = componentRepository.save(component);
 
         InventoryLot lot = component.getLot();
@@ -107,7 +142,7 @@ public class ProductionBatchService {
             com.erplite.inventory.entity.InventoryTransaction.builder()
                 .lot(lot)
                 .transactionType(TransactionType.Usage)
-                .quantity(req.getActualQuantity().negate())
+                .quantity(actualQty.negate())
                 .unitOfMeasure(component.getUnitOfMeasure())
                 .referenceId(component.getBatch().getBatchId())
                 .notes("Used in batch: " + component.getBatch().getBatchNumber())
@@ -120,5 +155,45 @@ public class ProductionBatchService {
     private ProductionBatch findBatchOrThrow(String id) {
         return batchRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("ProductionBatch", "id", id));
+    }
+
+    @Transactional
+    public void deleteComponent(String componentId) {
+        BatchComponent component = componentRepository.findById(componentId)
+            .orElseThrow(() -> new ResourceNotFoundException("BatchComponent", "id", componentId));
+        if (component.getActualQuantity() != null) {
+            throw new BusinessException("Cannot delete component that has been confirmed");
+        }
+        ProductionBatch batch = component.getBatch();
+        if (batch.getStatus() != BatchStatus.PLANNED) {
+            throw new BusinessException("Cannot delete component from batch with status: " + batch.getStatus());
+        }
+        componentRepository.delete(component);
+    }
+
+    @Transactional
+    public ComponentResponse updateComponent(String componentId, BatchComponentRequest req) {
+        BatchComponent component = componentRepository.findById(componentId)
+            .orElseThrow(() -> new ResourceNotFoundException("BatchComponent", "id", componentId));
+        if (component.getActualQuantity() != null) {
+            throw new BusinessException("Cannot modify component that has been confirmed");
+        }
+        ProductionBatch batch = component.getBatch();
+        if (batch.getStatus() != BatchStatus.PLANNED) {
+            throw new BusinessException("Cannot modify component in batch with status: " + batch.getStatus());
+        }
+        
+        BigDecimal remainingQuantity = calculateRemainingQuantity(component.getLot().getLotId());
+        BigDecimal newPlannedQty = req.getPlannedQuantity();
+        if (newPlannedQty.compareTo(remainingQuantity) > 0) {
+            throw new BusinessException(
+                String.format("Planned quantity (%.3f) exceeds remaining lot amount (%.3f %s)", 
+                    newPlannedQty, remainingQuantity, component.getLot().getUnitOfMeasure())
+            );
+        }
+        
+        component.setPlannedQuantity(newPlannedQty);
+        component.setUnitOfMeasure(req.getUnitOfMeasure());
+        return ComponentResponse.from(componentRepository.save(component));
     }
 }

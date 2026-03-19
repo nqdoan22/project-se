@@ -18,7 +18,8 @@ const NAV_SECTIONS = [
   {
     label: 'Production',
     items: [
-      { to: '/batches', icon: '⚗️', label: 'Lô sản xuất (Batches)' },
+      { to: '/batches',   icon: '⚗️', label: 'Lô sản xuất (Batches)' },
+      { to: '/components', icon: '📦', label: 'Nguyên liệu (Components)' },
     ],
   },
   {
