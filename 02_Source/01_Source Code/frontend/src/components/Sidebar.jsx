@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import keycloak from '../auth/keycloak';
+import { useAuth } from '../auth/AuthContext';
 
 const NAV_SECTIONS = [
   {
@@ -39,6 +39,10 @@ const NAV_SECTIONS = [
 ];
 
 export default function Sidebar() {
+  const { authenticated, username, roles, logout } = useAuth();
+
+  const displayRole = roles.find((r) => r !== 'default-roles-ims' && r !== 'offline_access' && r !== 'uma_authorization') || '';
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
@@ -62,16 +66,24 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
-      <div style={{ padding: '16px', borderTop: '1px solid var(--border)' }}>
-        {keycloak.authenticated && (
+      <div className="sidebar-profile">
+        {authenticated ? (
           <>
-            <span className="text-muted" style={{ fontSize: 13 }}>
-              {keycloak.tokenParsed?.preferred_username}
-            </span>
-            <button className="btn btn-outline btn-sm" onClick={() => keycloak.logout()}>
+            <div className="sidebar-profile-info">
+              <div className="sidebar-avatar">
+                {username.charAt(0).toUpperCase()}
+              </div>
+              <div className="sidebar-profile-text">
+                <span className="sidebar-username">{username}</span>
+                {displayRole && <span className="sidebar-role">{displayRole}</span>}
+              </div>
+            </div>
+            <button className="btn btn-outline btn-sm sidebar-logout" onClick={logout}>
               Logout
             </button>
           </>
+        ) : (
+          <span className="sidebar-role">Not connected</span>
         )}
       </div>
     </aside>
