@@ -15,6 +15,7 @@ export default function App() {
     <BrowserRouter>
       <div className="app-layout">
         <Sidebar />
+        <h1 className="app-layout">Week7Demo</h1>
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Navigate to="/materials" replace />} />
