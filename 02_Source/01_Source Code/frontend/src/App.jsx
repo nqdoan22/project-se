@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import MaterialsPage from "./pages/MaterialsPage";
 import LotsPage from "./pages/LotsPage";
+import TransactionsPage from "./pages/TransactionsPage";
 import QCTestsPage from "./pages/QCTestsPage";
 import BatchesPage from "./pages/BatchesPage";
 import BatchComponentsPage from "./pages/BatchComponentsPage";
@@ -19,6 +20,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/materials" replace />} />
             <Route path="/materials" element={<MaterialsPage />} />
             <Route path="/lots" element={<LotsPage />} />
+            <Route path="/transactions" element={<TransactionsPage />} />
             <Route path="/qctests" element={<QCTestsPage />} />
             <Route path="/batches" element={<BatchesPage />} />
             <Route path="/components" element={<BatchComponentsPage />} />

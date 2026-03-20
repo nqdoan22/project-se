@@ -7,6 +7,7 @@ const NAV_SECTIONS = [
     items: [
       { to: '/materials', icon: '🧪', label: 'Vật tư (Materials)' },
       { to: '/lots',      icon: '📦', label: 'Tồn kho (Lots)' },
+      { to: '/transactions', icon: '📋', label: 'Giao dịch (Transactions)' },
     ],
   },
   {
