@@ -54,7 +54,12 @@ export const lotApi = {
     api.patch(`/lots/${id}/status`, { status, performedBy }),
   getTransactions: (id) => api.get(`/lots/${id}/transactions`),
 };
-
+// ─── Inventory Transactions ──────────────────────────────────────────────────
+export const transactionApi = {
+  getAll: (params = {}) => api.get('/transactions', { params }),
+  getById: (id) => api.get(`/transactions/${id}`),
+  create: (data) => api.post('/transactions', data),
+};
 // ─── QC Tests ─────────────────────────────────────────────────────────────────
 export const qcTestApi = {
   getByLot: (lotId) => api.get('/qctests', { params: { lotId } }),
