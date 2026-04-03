@@ -213,6 +213,13 @@ class ProductionBatchServiceTest {
         when(batchRepository.findById("b1")).thenReturn(Optional.of(batch));
         when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
         when(componentRepository.save(any(BatchComponent.class))).thenReturn(savedComponent);
+        when(transactionRepository.findByLot_LotIdOrderByTransactionDateDesc("lot1")).thenReturn(List.of(new InventoryTransaction().builder()
+                .transactionId("t1")
+                .lot(lot)
+                .transactionType(TransactionType.Receipt)
+                .quantity(new BigDecimal("50.0"))
+                .unitOfMeasure("kg")
+                .build()));
 
         ComponentResponse result = productionBatchService.addComponent("b1", req);
 
@@ -263,8 +270,19 @@ class ProductionBatchServiceTest {
 
         when(componentRepository.findById("comp1")).thenReturn(Optional.of(component));
         when(componentRepository.save(component)).thenReturn(component);
+        // when(productionBatchService.calculateRemainingQuantity("lot1")).thenReturn(new BigDecimal("50.0"));
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(transactionRepository.findByLot_LotIdOrderByTransactionDateDesc("lot1")).thenReturn(List.of(new InventoryTransaction().builder()
+                .transactionId("t1")
+                .lot(lot)
+                .transactionType(TransactionType.Receipt)
+                .quantity(new BigDecimal("50.0"))
+                .unitOfMeasure("kg")
+                .build()));
+        when(transactionRepository.save(any(InventoryTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        productionBatchService.confirmComponent("comp1", req);
+        productionBatchService.confirmComponent("comp1", req);       
 
         assertThat(component.getActualQuantity()).isEqualByComparingTo("1.9");
 
