@@ -15,7 +15,6 @@ const TX_ICONS = {
 
 // ─── Create Transaction Form ────────────────────────────────────────────────────
 function CreateTransactionForm({ lots, onSubmit, onClose, loading, error }) {
-  const today = new Date().toISOString().split('T')[0];
   const [form, setForm] = useState({
     lotId: '',
     transactionType: 'Usage',

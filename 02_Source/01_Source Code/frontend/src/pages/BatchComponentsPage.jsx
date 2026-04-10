@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { batchApi, lotApi, materialApi } from '../services/api';
 import Modal from '../components/Modal';
-import { AddComponentForm, ConfirmUsageModal, ModifyComponentForm, DeleteConfirmationModal } from './BatchComponentsActions';
-
-const BATCH_STATUSES = ['Planned', 'InProgress', 'Complete', 'Rejected'];
+import { ConfirmUsageModal, ModifyComponentForm, DeleteConfirmationModal } from './BatchComponentsActions';
 
 function AddComponentToBatchForm({ batches, lots, onSubmit, onClose, loading, error }) {
   const [form, setForm] = useState({
@@ -154,6 +152,7 @@ export default function BatchComponentsPage() {
       setBatches(res.data.content ?? []);
     } catch (e) {
       console.error('Failed to load batches');
+      console.error(e);
     }
   }, []);
 
@@ -161,9 +160,9 @@ export default function BatchComponentsPage() {
     try {
       const res = await materialApi.getAll({ size: 1000 });
       setMaterials(res.data.content ?? []);
-      console.log('Loaded materials:', res.data.content ?? []);
     } catch (e) {
       console.error('Failed to load materials');
+      console.error(e);
     }
   }, []);
 

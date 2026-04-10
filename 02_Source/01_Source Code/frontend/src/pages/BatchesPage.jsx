@@ -414,7 +414,6 @@ function BatchDetailModal({ batchId, lots, onClose }) {
       {addCompTarget && (
         <Modal title="➕ Thêm nguyên liệu vào lô" onClose={() => setAddCompTarget(null)} size="modal-lg">
           <AddComponentForm
-            batchId={batchId}
             lots={lots}
             onSubmit={handleAddComponent}
             onClose={() => setAddCompTarget(null)}
