@@ -152,7 +152,7 @@ export default function BatchComponentsPage() {
     try {
       const res = await batchApi.getAll({ size: 1000 });
       setBatches(res.data.content ?? []);
-    } catch (e) {
+    } catch (_e) {
       console.error('Failed to load batches');
     }
   }, []);
@@ -162,7 +162,7 @@ export default function BatchComponentsPage() {
       const res = await materialApi.getAll({ size: 1000 });
       setMaterials(res.data.content ?? []);
       console.log('Loaded materials:', res.data.content ?? []);
-    } catch (e) {
+    } catch (_e) {
       console.error('Failed to load materials');
     }
   }, []);
