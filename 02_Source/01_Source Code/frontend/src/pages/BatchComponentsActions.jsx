@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Modal from '../components/Modal';
 
-export function AddComponentForm({ batchId, lots, onSubmit, onClose, loading, error }) {
+export function AddComponentForm({ batchId: _batchId, lots, onSubmit, onClose, loading, error }) {
   const [form, setForm] = useState({
     lotId: '',
     plannedQuantity: '',

@@ -217,7 +217,7 @@ export default function UsersPage() {
     setFormLoading(true);
     setFormError('');
     try {
-      const { password, ...data } = form;
+      const { password: _password, ...data } = form;
       await userApi.update(editTarget.userId, data);
       setEditTarget(null);
       flash('✅ Cập nhật người dùng thành công');
