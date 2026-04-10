@@ -1,0 +1,21 @@
+# Git
+.git
+.gitignore
+
+# Build output (rebuilt inside Docker)
+dist/
+node_modules/
+
+# Local env files (VITE_ vars come in via Docker build args)
+.env.local
+.env.*.local
+
+# Playwright artifacts
+playwright-report/
+test-results/
+.auth/
+
+# IDE & OS
+.vscode
+.idea
+.DS_Store

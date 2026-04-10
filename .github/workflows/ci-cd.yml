@@ -1,0 +1,142 @@
+name: CI / CD
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Trigger map:
+#   push develop      → CI only  (backend + frontend)
+#   PR   * → main     → CI only  (required gate, blocks merge if red)
+#   push main         → CI + CD  (deploy runs ONLY if every CI job is green)
+# ─────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── 1. Backend CI ────────────────────────────────────────────────────────────
+  backend:
+    name: "CI — Backend (Java 21 / Spring Boot)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "02_Source/01_Source Code/backend"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: gradle           # caches ~/.gradle between runs
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        # Service tests use Mockito — no real DB required.
+        # InventoryApplicationTests (@SpringBootTest) is excluded until
+        # an H2 test profile is added (see docs/adr/test-profile.md).
+        run: ./gradlew test --no-daemon --tests "com.erplite.inventory.service.*"
+
+      - name: Build JAR
+        run: ./gradlew bootJar --no-daemon -x test
+
+      - name: Upload test report
+        if: always()             # upload even when tests fail so devs can read it
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: "02_Source/01_Source Code/backend/build/reports/tests/"
+          retention-days: 7
+
+  # ── 2. Frontend CI ──────────────────────────────────────────────────────────
+  frontend:
+    name: "CI — Frontend (Node 20 / React + Vite)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "02_Source/01_Source Code/frontend"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: "02_Source/01_Source Code/frontend/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          # Dummy values — real URLs are baked in at Render build time via render.yaml
+          VITE_API_BASE: http://localhost:8080/api/v1
+          VITE_KEYCLOAK_URL: http://localhost:9090
+        run: npm run build
+
+  # ── 3. Deploy to Render ──────────────────────────────────────────────────────
+  # SAFETY GATE: this job only runs when ALL of the following are true:
+  #   a) both `backend` and `frontend` jobs completed successfully (needs:)
+  #   b) the event is a push (not a PR — PRs never deploy)
+  #   c) the branch being pushed is `main`
+  #
+  # If CI is red for any reason → `needs` is not satisfied → this job is SKIPPED.
+  # Render autoDeploy is set to false in render.yaml, so nothing deploys unless
+  # this job explicitly calls the deploy hook.
+  deploy:
+    name: "CD — Deploy to Render (production)"
+    needs: [backend, frontend]   # ← hard gate: skip if any CI job failed
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production      # enables GitHub environment protection rules
+
+    steps:
+      - name: Trigger Backend deploy
+        run: |
+          echo "Triggering backend deploy on Render..."
+          curl --silent --show-error --fail \
+            -X POST "${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}"
+
+      - name: Trigger Frontend deploy
+        run: |
+          echo "Triggering frontend deploy on Render..."
+          curl --silent --show-error --fail \
+            -X POST "${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}"
+
+      - name: Wait for Backend to be healthy
+        # Poll /api/v1/health every 20 s for up to 10 min.
+        # Render cold-start on free tier can take ~2–3 min.
+        run: |
+          echo "Waiting for backend health check..."
+          MAX_ATTEMPTS=30
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            HTTP_STATUS=$(curl --silent --output /dev/null \
+              --write-out "%{http_code}" \
+              "${{ secrets.RENDER_BACKEND_URL }}/api/v1/health" || echo "000")
+
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✓ Backend is healthy (attempt $i)"
+              exit 0
+            fi
+
+            echo "  Attempt $i/$MAX_ATTEMPTS — HTTP $HTTP_STATUS — retrying in 20s..."
+            sleep 20
+          done
+
+          echo "✗ Backend did not become healthy within 10 minutes."
+          exit 1
+
+      - name: Deployment summary
+        run: |
+          echo "Deployment complete."
+          echo "Backend: ${{ secrets.RENDER_BACKEND_URL }}/api/v1/health"
