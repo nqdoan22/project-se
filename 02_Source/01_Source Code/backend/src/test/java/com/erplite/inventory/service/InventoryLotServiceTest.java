@@ -735,7 +735,7 @@ class InventoryLotServiceTest {
     //     verify(lotRepository, never()).save(any());
     // }
 
-    // The following test is commented out because currently the system does not allow adjusting a Depleted lot back to positive quantity.
+    // The following test is commented out because the system disallows this through quantity check instead
     // @Test
     // void adjustLot_decreaseDepletedBlocked() {
     //     InventoryLot lot = buildLot("lot1", LotStatus.Depleted, new BigDecimal("0.0"));
