@@ -1,0 +1,39 @@
+services:
+  # ── Backend (Spring Boot) ──────────────────────────────────────────────────
+  - type: web
+    name: ims-backend
+    runtime: docker
+    dockerfilePath: ./02_Source/01_Source Code/backend/Dockerfile
+    dockerContext: ./02_Source/01_Source Code/backend
+    branch: main
+    autoDeploy: false            # Render NEVER deploys on its own.
+                                 # Deploy is triggered exclusively by the
+                                 # GitHub Actions CD job (after CI passes).
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DB_JDBC_URL
+        sync: false          # Set in Render dashboard — never commit real value
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: KEYCLOAK_ISSUER_URI
+        sync: false
+      - key: KEYCLOAK_JWK_SET_URI
+        sync: false
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+  # ── Frontend (React + nginx) ───────────────────────────────────────────────
+  - type: web
+    name: ims-frontend
+    runtime: docker
+    dockerfilePath: ./02_Source/01_Source Code/frontend/Dockerfile
+    dockerContext: ./02_Source/01_Source Code/frontend
+    branch: main
+    autoDeploy: false            # Controlled exclusively by GitHub Actions.
+    dockerBuildArgs:
+      - key: VITE_API_BASE
+        sync: false          # Set in Render dashboard
+      - key: VITE_KEYCLOAK_URL
+        sync: false

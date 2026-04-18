@@ -11,6 +11,7 @@ function MetricCard({ label, value, color, sub }) {
   );
 }
 
+
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState(null);
   const [dashLoading, setDashLoading] = useState(true);

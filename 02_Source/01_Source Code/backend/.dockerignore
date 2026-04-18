@@ -1,0 +1,19 @@
+# Git
+.git
+.gitignore
+
+# Gradle cache & build output (rebuilt inside Docker)
+.gradle
+build/
+bin/
+
+# Local environment — NEVER copy credentials into image
+.env
+
+# IDE files
+.idea
+.vscode
+*.iml
+
+# OS
+.DS_Store
