@@ -60,7 +60,7 @@ test.describe('Create Material — Real Backend (dev profile)', () => {
     await expect(page.locator('[role="dialog"]')).toBeVisible();
 
     await page.locator('#partNumber').fill(partNumber);
-    await page.locator('#materialType').selectOption('Excipient');
+    await page.locator('#materialType').selectOption('EXCIPIENT');
     await page.locator('#materialName').fill('E2E Full Fields Material');
     await page.locator('#storageConditions').fill('Store at 2-8°C');
     await page.locator('#specificationDocument').fill('https://docs.example.com/spec-e2e');
