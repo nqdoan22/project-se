@@ -49,3 +49,11 @@ bootRun {
         }
     }
 }
+
+test {
+    testLogging {
+        events "STANDARD_OUT", "STANDARD_ERROR"
+        showExceptions = true
+        exceptionFormat "full"
+    }
+}

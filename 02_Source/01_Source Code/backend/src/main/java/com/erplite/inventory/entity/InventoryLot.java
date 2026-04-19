@@ -23,7 +23,7 @@ public class InventoryLot {
     @JoinColumn(name = "material_id", nullable = false)
     private Material material;
 
-    @Column(name = "manufacturer_lot", length = 100)
+    @Column(name = "manufacturer_lot", nullable = false, length = 100)
     private String manufacturerLot;
 
     @Builder.Default
@@ -55,7 +55,7 @@ public class InventoryLot {
     @JoinColumn(name = "parent_lot_id")
     private InventoryLot parentLot;
 
-    @Column(name = "manufacturer_name", length = 100)
+    @Column(name = "manufacturer_name", nullable = false, length = 100)
     private String manufacturerName;
 
     @Column(name = "supplier_name", length = 100)

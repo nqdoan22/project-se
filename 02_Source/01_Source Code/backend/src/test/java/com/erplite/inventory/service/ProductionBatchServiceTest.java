@@ -192,6 +192,42 @@ class ProductionBatchServiceTest {
     // ── addComponent ──────────────────────────────────────────────────────
 
     @Test
+    void addComponent_success_savesComponentWithBatchAndLot() {
+        ProductionBatch batch = buildBatch("b1", BatchStatus.PLANNED);
+        InventoryLot lot = buildLot("lot1");
+        BatchComponentRequest req = new BatchComponentRequest();
+        req.setLotId("lot1");
+        req.setPlannedQuantity(new BigDecimal("2.0"));
+        req.setUnitOfMeasure("kg");
+        req.setAddedBy("prod_operator");
+
+        BatchComponent savedComponent = BatchComponent.builder()
+                .componentId("comp1")
+                .batch(batch)
+                .lot(lot)
+                .plannedQuantity(new BigDecimal("2.0"))
+                .unitOfMeasure("kg")
+                .addedBy("prod_operator")
+                .build();
+
+        when(batchRepository.findById("b1")).thenReturn(Optional.of(batch));
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(componentRepository.save(any(BatchComponent.class))).thenReturn(savedComponent);
+        when(transactionRepository.findByLot_LotIdOrderByTransactionDateDesc("lot1")).thenReturn(List.of(new InventoryTransaction().builder()
+                .transactionId("t1")
+                .lot(lot)
+                .transactionType(TransactionType.Receipt)
+                .quantity(new BigDecimal("50.0"))
+                .unitOfMeasure("kg")
+                .build()));
+
+        ComponentResponse result = productionBatchService.addComponent("b1", req);
+
+        assertThat(result.getPlannedQuantity()).isEqualByComparingTo("2.0");
+        verify(componentRepository).save(any(BatchComponent.class));
+    }
+
+    @Test
     void addComponent_lotNotFound_throwsResourceNotFoundException() {
         when(batchRepository.findById("b1")).thenReturn(Optional.of(buildBatch("b1", BatchStatus.PLANNED)));
         when(lotRepository.findById("missing")).thenReturn(Optional.empty());
@@ -214,6 +250,48 @@ class ProductionBatchServiceTest {
     }
 
     // ── confirmComponent ──────────────────────────────────────────────────
+
+    @Test
+    void confirmComponent_success_setsActualQtyAndRecordsUsageTransaction() {
+        ProductionBatch batch = buildBatch("b1", BatchStatus.IN_PROGRESS);
+        InventoryLot lot = buildLot("lot1");
+        BatchComponent component = BatchComponent.builder()
+                .componentId("comp1")
+                .batch(batch)
+                .lot(lot)
+                .plannedQuantity(new BigDecimal("2.0"))
+                .unitOfMeasure("kg")
+                .addedBy("prod_operator")
+                .build();
+
+        ComponentConfirmRequest req = new ComponentConfirmRequest();
+        req.setActualQuantity(new BigDecimal("1.9"));
+        req.setPerformedBy("prod_operator");
+
+        when(componentRepository.findById("comp1")).thenReturn(Optional.of(component));
+        when(componentRepository.save(component)).thenReturn(component);
+        // when(productionBatchService.calculateRemainingQuantity("lot1")).thenReturn(new BigDecimal("50.0"));
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(transactionRepository.findByLot_LotIdOrderByTransactionDateDesc("lot1")).thenReturn(List.of(new InventoryTransaction().builder()
+                .transactionId("t1")
+                .lot(lot)
+                .transactionType(TransactionType.Receipt)
+                .quantity(new BigDecimal("50.0"))
+                .unitOfMeasure("kg")
+                .build()));
+        when(transactionRepository.save(any(InventoryTransaction.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        productionBatchService.confirmComponent("comp1", req);       
+
+        assertThat(component.getActualQuantity()).isEqualByComparingTo("1.9");
+
+        ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+        verify(transactionRepository).save(txCaptor.capture());
+        assertThat(txCaptor.getValue().getTransactionType()).isEqualTo(TransactionType.Usage);
+        assertThat(txCaptor.getValue().getQuantity()).isEqualByComparingTo("-1.9");
+        assertThat(txCaptor.getValue().getPerformedBy()).isEqualTo("prod_operator");
+    }
 
     @Test
     void confirmComponent_notFound_throwsResourceNotFoundException() {
