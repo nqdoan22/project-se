@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { reportApi } from '../services/api';
 
+// Display names for material type enum values
+const MATERIAL_TYPE_DISPLAY = {
+  'API': 'API',
+  'EXCIPIENT': 'Excipient',
+  'DIETARY_SUPPLEMENT': 'Dietary Supplement',
+  'CONTAINER': 'Container',
+  'CLOSURE': 'Closure',
+  'PROCESS_CHEMICAL': 'Process Chemical',
+  'TESTING_MATERIAL': 'Testing Material'
+};
+
+const getDisplayName = (type) => MATERIAL_TYPE_DISPLAY[type] || type;
+
 function MetricCard({ label, value, color, sub }) {
   return (
     <div className="metric-card">
@@ -234,7 +247,7 @@ export default function DashboardPage() {
                     <tr key={item.materialId}>
                       <td className="td-mono">{item.partNumber}</td>
                       <td className="td-primary">{item.materialName}</td>
-                      <td><span className="type-badge">{item.materialType}</span></td>
+                      <td><span className="type-badge">{getDisplayName(item.materialType)}</span></td>
                       <td>
                         <span style={{ color: 'var(--warning)' }}>
                           {item.lots?.Quarantine?.count ?? 0} lô / {item.lots?.Quarantine?.totalQuantity ?? 0}

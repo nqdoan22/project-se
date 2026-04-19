@@ -2,7 +2,29 @@ import { useState, useEffect, useCallback } from 'react';
 import { materialApi } from '../services/api';
 import Modal from '../components/Modal';
 
-const MATERIAL_TYPES = ['API', 'Excipient', 'Packaging', 'Product', 'Other'];
+// Backend enum values (must match Material.MaterialType in Java)
+const MATERIAL_TYPES = [
+  'API',
+  'EXCIPIENT',
+  'DIETARY_SUPPLEMENT',
+  'CONTAINER',
+  'CLOSURE',
+  'PROCESS_CHEMICAL',
+  'TESTING_MATERIAL'
+];
+
+// Display names for enum values (user-friendly)
+const MATERIAL_TYPE_DISPLAY = {
+  'API': 'API',
+  'EXCIPIENT': 'Excipient',
+  'DIETARY_SUPPLEMENT': 'Dietary Supplement',
+  'CONTAINER': 'Container',
+  'CLOSURE': 'Closure',
+  'PROCESS_CHEMICAL': 'Process Chemical',
+  'TESTING_MATERIAL': 'Testing Material'
+};
+
+const getDisplayName = (type) => MATERIAL_TYPE_DISPLAY[type] || type;
 
 function MaterialForm({ initial, onSubmit, onClose, loading, error }) {
   const [form, setForm] = useState({
@@ -46,7 +68,10 @@ function MaterialForm({ initial, onSubmit, onClose, loading, error }) {
               required
               id="materialType"
             >
-              {MATERIAL_TYPES.map((t) => <option key={t}>{t}</option>)}
+              <option value="">Select a type</option>
+              {MATERIAL_TYPES.map((t) => (
+                <option key={t} value={t}>{getDisplayName(t)}</option>
+              ))}
             </select>
           </div>
           <div className="form-group form-full">
@@ -213,7 +238,7 @@ export default function MaterialsPage() {
                   key={t}
                   className={`chip ${typeFilter === t ? 'active' : ''}`}
                   onClick={() => setTypeFilter(t === typeFilter ? '' : t)}
-                >{t}</button>
+                >{getDisplayName(t)}</button>
               ))}
             </div>
           </div>
@@ -246,7 +271,7 @@ export default function MaterialsPage() {
                     <tr key={m.materialId}>
                       <td className="td-mono">{m.partNumber}</td>
                       <td className="td-primary">{m.materialName}</td>
-                      <td><span className="type-badge">{m.materialType}</span></td>
+                      <td><span className="type-badge">{getDisplayName(m.materialType)}</span></td>
                       <td>{m.storageConditions || <span className="text-muted">—</span>}</td>
                       <td className="text-muted">
                         {m.createdDate ? new Date(m.createdDate).toLocaleDateString('vi-VN') : '—'}
