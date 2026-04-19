@@ -11,6 +11,7 @@ public class InventoryLotRequestDTO {
     @NotBlank(message = "Material ID is required")
     private String materialId;
 
+    @NotBlank(message = "Manufacturer lot is required")
     @Size(max = 100)
     private String manufacturerLot;
 

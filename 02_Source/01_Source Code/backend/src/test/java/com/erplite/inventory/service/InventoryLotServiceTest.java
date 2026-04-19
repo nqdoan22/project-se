@@ -125,6 +125,52 @@ class InventoryLotServiceTest {
                 .hasMessageContaining("Material");
     }
 
+    @Test
+    void receiveLot_withOptionalFields() {
+        LotReceiveRequest req = new LotReceiveRequest();
+        req.setMaterialId("mat1");
+        req.setQuantity(new BigDecimal("100.0"));
+        req.setUnitOfMeasure("kg");
+        req.setExpirationDate(LocalDate.now().plusYears(2));
+        req.setReceivedDate(LocalDate.now().minusDays(1));
+        req.setManufacturerName("Pharma Corp");
+        req.setManufacturerLot("LOT-001");
+        req.setSupplierName("Supplier A");
+        req.setInUseExpirationDate(LocalDate.now().plusDays(30));
+        req.setPoNumber("PO-12345");
+        req.setReceivingFormId("RF-001");
+        req.setPerformedBy("inv_manager");
+
+        InventoryLot savedLot = InventoryLot.builder()
+                .lotId("lot1")
+                .material(buildMaterial())
+                .manufacturerLot("LOT-001")
+                .manufacturerName("Pharma Corp")
+                .supplierName("Supplier A")
+                .quantity(new BigDecimal("100.0"))
+                .unitOfMeasure("kg")
+                .status(LotStatus.Quarantine)
+                .receivedDate(LocalDate.now().minusDays(1))
+                .expirationDate(LocalDate.now().plusYears(2))
+                .storageLocation("Shelf-A")
+                .isSample(false)
+                .build();
+
+        when(materialRepository.findById("mat1")).thenReturn(Optional.of(buildMaterial()));
+        when(lotRepository.save(any(InventoryLot.class))).thenReturn(savedLot);
+
+        LotResponse result = inventoryLotService.receiveLot(req);
+
+        assertThat(result.getStatus()).isEqualTo(LotStatus.Quarantine);
+        assertThat(result.getQuantity()).isEqualByComparingTo("100.0");
+        assertThat(result.getManufacturerName()).isEqualTo("Pharma Corp");
+        assertThat(result.getSupplierName()).isEqualTo("Supplier A");
+
+        ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
+        verify(transactionRepository).save(txCaptor.capture());
+        assertThat(txCaptor.getValue().getTransactionType()).isEqualTo(TransactionType.Receipt);
+    }
+
     // ── updateLotStatus ────────────────────────────────────────────────────
 
     @Test
@@ -242,6 +288,62 @@ class InventoryLotServiceTest {
         assertThat(captor.getValue().getNotes()).isEqualTo("All QC passed");
     }
 
+    // The following test is commented out because currently the system does not allow moving a Rejected lot back to Quarantine.
+    // @Test
+    // void updateLotStatus_rejectedToQuarantine_succeeds() {
+    //     InventoryLot lot = buildLot("lot1", LotStatus.Rejected, BigDecimal.TEN);
+    //     LotStatusUpdateRequest req = new LotStatusUpdateRequest();
+    //     req.setStatus(LotStatus.Quarantine);
+    //     req.setPerformedBy("qc_analyst");
+    //     req.setNotes("Re-quarantine for retest");
+
+    //     when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+    //     when(lotRepository.save(lot)).thenReturn(lot);
+
+    //     LotResponse result = inventoryLotService.updateLotStatus("lot1", req);
+
+    //     assertThat(result.getStatus()).isEqualTo(LotStatus.Quarantine);
+    //     verify(transactionRepository).save(any(InventoryTransaction.class));
+    // }
+
+    @Test
+    void updateLotStatus_acceptedToQuarantine_throwsBusinessException() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Accepted, BigDecimal.TEN);
+        LotStatusUpdateRequest req = new LotStatusUpdateRequest();
+        req.setStatus(LotStatus.Quarantine);
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+
+        assertThatThrownBy(() -> inventoryLotService.updateLotStatus("lot1", req))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Invalid status transition");
+    }
+
+    @Test
+    void updateLotStatus_lotNotFound_throwsResourceNotFoundException() {
+        LotStatusUpdateRequest req = new LotStatusUpdateRequest();
+        req.setStatus(LotStatus.Accepted);
+
+        when(lotRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inventoryLotService.updateLotStatus("nonexistent", req))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Lot");
+    }
+
+    @Test
+    void updateLotStatus_rejectedToAccepted_throwsBusinessException() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Rejected, BigDecimal.TEN);
+        LotStatusUpdateRequest req = new LotStatusUpdateRequest();
+        req.setStatus(LotStatus.Accepted);
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+
+        assertThatThrownBy(() -> inventoryLotService.updateLotStatus("lot1", req))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Invalid status transition");
+    }
+
     // ── splitLot ───────────────────────────────────────────────────────────
 
     @Test
@@ -335,6 +437,169 @@ class InventoryLotServiceTest {
                 .hasMessageContaining("Insufficient");
     }
 
+    // The following tests are commented out because currently the system only allows splitting from Accepted lots.
+    // @Test
+    // void splitLot_successQuarantine() {
+    //     InventoryLot parent = buildLot("parent1", LotStatus.Quarantine, new BigDecimal("500.0"));
+    //     LotSplitRequest req = new LotSplitRequest();
+    //     req.setSampleQuantity(new BigDecimal("50.0"));
+    //     req.setStorageLocation("Storage-B");
+    //     req.setPerformedBy("qc_analyst");
+
+    //     InventoryLot savedParent = buildLot("parent1", LotStatus.Quarantine, new BigDecimal("450.0"));
+    //     InventoryLot savedSample = InventoryLot.builder()
+    //             .lotId("sample1")
+    //             .material(buildMaterial())
+    //             .manufacturerLot("LOT-001")
+    //             .manufacturerName("Pharma Corp")
+    //             .supplierName("Supplier A")
+    //             .quantity(new BigDecimal("50.0"))
+    //             .unitOfMeasure("kg")
+    //             .status(LotStatus.Quarantine)
+    //             .receivedDate(LocalDate.now())
+    //             .expirationDate(LocalDate.now().plusYears(2))
+    //             .storageLocation("Storage-B")
+    //             .isSample(true)
+    //             .parentLot(savedParent)
+    //             .build();
+
+    //     when(lotRepository.findById("parent1")).thenReturn(Optional.of(parent));
+    //     when(lotRepository.save(any(InventoryLot.class)))
+    //             .thenReturn(savedParent)
+    //             .thenReturn(savedSample);
+
+    //     LotResponse result = inventoryLotService.splitLot("parent1", req);
+
+    //     assertThat(result.getIsSample()).isTrue();
+    //     assertThat(result.getQuantity()).isEqualByComparingTo("50.0");
+    //     verify(transactionRepository, times(2)).save(any(InventoryTransaction.class));
+    // }
+
+    // This test is commented out because splitting from a Rejected lot is not currently allowed 
+    // @Test
+    // void splitLot_successRejected() {
+    //     InventoryLot parent = buildLot("parent1", LotStatus.Rejected, new BigDecimal("750.0"));
+    //     LotSplitRequest req = new LotSplitRequest();
+    //     req.setSampleQuantity(new BigDecimal("150.0"));
+    //     req.setStorageLocation("Storage-C");
+    //     req.setPerformedBy("qc_analyst");
+
+    //     InventoryLot savedParent = buildLot("parent1", LotStatus.Rejected, new BigDecimal("600.0"));
+    //     InventoryLot savedSample = InventoryLot.builder()
+    //             .lotId("sample1")
+    //             .material(buildMaterial())
+    //             .manufacturerLot("LOT-001")
+    //             .manufacturerName("Pharma Corp")
+    //             .supplierName("Supplier A")
+    //             .quantity(new BigDecimal("150.0"))
+    //             .unitOfMeasure("kg")
+    //             .status(LotStatus.Quarantine)
+    //             .receivedDate(LocalDate.now())
+    //             .expirationDate(LocalDate.now().plusYears(2))
+    //             .storageLocation("Storage-C")
+    //             .isSample(true)
+    //             .parentLot(savedParent)
+    //             .build();
+
+    //     when(lotRepository.findById("parent1")).thenReturn(Optional.of(parent));
+    //     when(lotRepository.save(any(InventoryLot.class)))
+    //             .thenReturn(savedParent)
+    //             .thenReturn(savedSample);
+
+    //     LotResponse result = inventoryLotService.splitLot("parent1", req);
+
+    //     assertThat(result.getIsSample()).isTrue();
+    //     assertThat(result.getQuantity()).isEqualByComparingTo("150.0");
+    //     verify(transactionRepository, times(2)).save(any(InventoryTransaction.class));
+    // }
+
+    // This test is commented out because splitting from a Depleted lot is not currently allowed
+    // @Test
+    // void splitLot_successDepleted() {
+    //     InventoryLot parent = buildLot("parent1", LotStatus.Depleted, new BigDecimal("200.0"));
+    //     LotSplitRequest req = new LotSplitRequest();
+    //     req.setSampleQuantity(new BigDecimal("100.0"));
+    //     req.setStorageLocation("Storage-D");
+    //     req.setPerformedBy("qc_analyst");
+
+    //     InventoryLot savedParent = buildLot("parent1", LotStatus.Depleted, new BigDecimal("100.0"));
+    //     InventoryLot savedSample = InventoryLot.builder()
+    //             .lotId("sample1")
+    //             .material(buildMaterial())
+    //             .manufacturerLot("LOT-001")
+    //             .manufacturerName("Pharma Corp")
+    //             .supplierName("Supplier A")
+    //             .quantity(new BigDecimal("100.0"))
+    //             .unitOfMeasure("kg")
+    //             .status(LotStatus.Quarantine)
+    //             .receivedDate(LocalDate.now())
+    //             .expirationDate(LocalDate.now().plusYears(2))
+    //             .storageLocation("Storage-D")
+    //             .isSample(true)
+    //             .parentLot(savedParent)
+    //             .build();
+
+    //     when(lotRepository.findById("parent1")).thenReturn(Optional.of(parent));
+    //     when(lotRepository.save(any(InventoryLot.class)))
+    //             .thenReturn(savedParent)
+    //             .thenReturn(savedSample);
+
+    //     LotResponse result = inventoryLotService.splitLot("parent1", req);
+
+    //     assertThat(result.getIsSample()).isTrue();
+    //     assertThat(result.getQuantity()).isEqualByComparingTo("100.0");
+    //     verify(transactionRepository, times(2)).save(any(InventoryTransaction.class));
+    // }
+
+    @Test
+    void splitLot_lotNotFound() {
+        LotSplitRequest req = new LotSplitRequest();
+        req.setSampleQuantity(new BigDecimal("100.0"));
+
+        when(lotRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inventoryLotService.splitLot("nonexistent", req))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Lot");
+    }
+
+    @Test
+    void splitLot_quantityEqualToAvailable() {
+        InventoryLot parent = buildLot("parent1", LotStatus.Accepted, new BigDecimal("100.0"));
+        LotSplitRequest req = new LotSplitRequest();
+        req.setSampleQuantity(new BigDecimal("100.0"));
+        req.setStorageLocation("Lab-1");
+        req.setPerformedBy("qc_analyst");
+
+        InventoryLot savedParent = buildLot("parent1", LotStatus.Accepted, new BigDecimal("0.0"));
+        InventoryLot savedSample = InventoryLot.builder()
+                .lotId("sample1")
+                .material(buildMaterial())
+                .manufacturerLot("LOT-001")
+                .manufacturerName("Pharma Corp")
+                .supplierName("Supplier A")
+                .quantity(new BigDecimal("100.0"))
+                .unitOfMeasure("kg")
+                .status(LotStatus.Quarantine)
+                .receivedDate(LocalDate.now())
+                .expirationDate(LocalDate.now().plusYears(2))
+                .storageLocation("Lab-1")
+                .isSample(true)
+                .parentLot(savedParent)
+                .build();
+
+        when(lotRepository.findById("parent1")).thenReturn(Optional.of(parent));
+        when(lotRepository.save(any(InventoryLot.class)))
+                .thenReturn(savedParent)
+                .thenReturn(savedSample);
+
+        LotResponse result = inventoryLotService.splitLot("parent1", req);
+
+        assertThat(result.getQuantity()).isEqualByComparingTo("100.0");
+        // After split, parent should have 0 quantity
+        verify(transactionRepository, times(2)).save(any(InventoryTransaction.class));
+    }
+
     // ── adjustLot ─────────────────────────────────────────────────────────
 
     @Test
@@ -386,6 +651,137 @@ class InventoryLotServiceTest {
         verify(lotRepository, never()).save(any());
     }
 
+    @Test
+    void adjustLot_increaseQuarantine() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Quarantine, new BigDecimal("300.0"));
+        LotAdjustRequest req = new LotAdjustRequest();
+        req.setAdjustmentQuantity(new BigDecimal("50.0"));
+        req.setReason("Initial recount");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        LotResponse result = inventoryLotService.adjustLot("lot1", req);
+
+        assertThat(result.getQuantity()).isEqualByComparingTo("350.0");
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void adjustLot_decreaseQuarantine() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Quarantine, new BigDecimal("300.0"));
+        LotAdjustRequest req = new LotAdjustRequest();
+        req.setAdjustmentQuantity(new BigDecimal("-50.0"));
+        req.setReason("Damage loss");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        LotResponse result = inventoryLotService.adjustLot("lot1", req);
+
+        assertThat(result.getQuantity()).isEqualByComparingTo("250.0");
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void adjustLot_increaseRejected() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Rejected, new BigDecimal("200.0"));
+        LotAdjustRequest req = new LotAdjustRequest();
+        req.setAdjustmentQuantity(new BigDecimal("75.0"));
+        req.setReason("Recount correction");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        LotResponse result = inventoryLotService.adjustLot("lot1", req);
+
+        assertThat(result.getQuantity()).isEqualByComparingTo("275.0");
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void adjustLot_decreaseRejected() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Rejected, new BigDecimal("200.0"));
+        LotAdjustRequest req = new LotAdjustRequest();
+        req.setAdjustmentQuantity(new BigDecimal("-75.0"));
+        req.setReason("Disposal loss");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        LotResponse result = inventoryLotService.adjustLot("lot1", req);
+
+        assertThat(result.getQuantity()).isEqualByComparingTo("125.0");
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    // @Test
+    // void adjustLot_increaseDepletedBlocked() {
+    //     InventoryLot lot = buildLot("lot1", LotStatus.Depleted, new BigDecimal("0.0"));
+    //     LotAdjustRequest req = new LotAdjustRequest();
+    //     req.setAdjustmentQuantity(new BigDecimal("100.0"));
+    //     req.setReason("Recount");
+
+    //     when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+    //     when(lotRepository.save(any(InventoryLot.class))).thenReturn(lot);
+
+    //     assertThatThrownBy(() -> inventoryLotService.adjustLot("lot1", req))
+    //             .isInstanceOf(BusinessException.class);
+
+    //     verify(lotRepository, never()).save(any());
+    // }
+
+    // The following test is commented out because the system disallows this through quantity check instead
+    // @Test
+    // void adjustLot_decreaseDepletedBlocked() {
+    //     InventoryLot lot = buildLot("lot1", LotStatus.Depleted, new BigDecimal("0.0"));
+    //     LotAdjustRequest req = new LotAdjustRequest();
+    //     req.setAdjustmentQuantity(new BigDecimal("-50.0"));
+    //     req.setReason("Removal");
+
+    //     when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+    //     when(lotRepository.save(any(InventoryLot.class))).thenReturn(lot);
+
+    //     assertThatThrownBy(() -> inventoryLotService.adjustLot("lot1", req))
+    //             .isInstanceOf(BusinessException.class);
+
+    //     verify(lotRepository, never()).save(any());
+    // }
+
+    @Test
+    void adjustLot_notFound() {
+        LotAdjustRequest req = new LotAdjustRequest();
+        req.setAdjustmentQuantity(new BigDecimal("50.0"));
+        req.setReason("test");
+
+        when(lotRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inventoryLotService.adjustLot("nonexistent", req))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Lot");
+    }
+
+    @Test
+    void adjustLot_toZeroQuantity() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Accepted, new BigDecimal("100.0"));
+        LotAdjustRequest req = new LotAdjustRequest();
+        req.setAdjustmentQuantity(new BigDecimal("-100.0"));
+        req.setReason("Complete removal");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        LotResponse result = inventoryLotService.adjustLot("lot1", req);
+
+        assertThat(result.getQuantity()).isEqualByComparingTo("0.0");
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
     // ── transferLot ────────────────────────────────────────────────────────
 
     @Test
@@ -406,6 +802,37 @@ class InventoryLotServiceTest {
         ArgumentCaptor<InventoryTransaction> txCaptor = ArgumentCaptor.forClass(InventoryTransaction.class);
         verify(transactionRepository).save(txCaptor.capture());
         assertThat(txCaptor.getValue().getTransactionType()).isEqualTo(TransactionType.Transfer);
+    }
+
+    @Test
+    void transferLot_notFound() {
+        com.erplite.inventory.dto.lot.LotTransferRequest req =
+                new com.erplite.inventory.dto.lot.LotTransferRequest();
+        req.setNewStorageLocation("Shelf-B");
+
+        when(lotRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inventoryLotService.transferLot("nonexistent", req))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Lot");
+    }
+
+    @Test
+    void transferLot_sameLocation() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Accepted, BigDecimal.TEN);
+        com.erplite.inventory.dto.lot.LotTransferRequest req =
+                new com.erplite.inventory.dto.lot.LotTransferRequest();
+        req.setNewStorageLocation("Shelf-A");
+        req.setPerformedBy("inv_manager");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        LotResponse result = inventoryLotService.transferLot("lot1", req);
+
+        assertThat(result.getStorageLocation()).isEqualTo("Shelf-A");
+        // Should still record a transaction even if same location
+        verify(transactionRepository).save(any(InventoryTransaction.class));
     }
 
     // ── disposeLot ─────────────────────────────────────────────────────────
@@ -463,6 +890,107 @@ class InventoryLotServiceTest {
                 .hasMessageContaining("Insufficient");
 
         verify(lotRepository, never()).save(any());
+    }
+
+    @Test
+    void disposeLot_partialQuarantine() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Quarantine, new BigDecimal("500.0"));
+        LotDisposeRequest req = new LotDisposeRequest();
+        req.setDisposalQuantity(new BigDecimal("100.0"));
+        req.setReason("Failed QC disposal");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        inventoryLotService.disposeLot("lot1", req);
+
+        assertThat(lot.getQuantity()).isEqualByComparingTo("400.0");
+        assertThat(lot.getStatus()).isEqualTo(LotStatus.Quarantine);
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void disposeLot_completeQuarantine() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Quarantine, new BigDecimal("200.0"));
+        LotDisposeRequest req = new LotDisposeRequest();
+        req.setDisposalQuantity(new BigDecimal("200.0"));
+        req.setReason("Complete disposal");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        inventoryLotService.disposeLot("lot1", req);
+
+        assertThat(lot.getStatus()).isEqualTo(LotStatus.Depleted);
+        assertThat(lot.getQuantity()).isEqualByComparingTo("0.0");
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void disposeLot_partialRejected() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Rejected, new BigDecimal("600.0"));
+        LotDisposeRequest req = new LotDisposeRequest();
+        req.setDisposalQuantity(new BigDecimal("150.0"));
+        req.setReason("Rejected lot disposal");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        inventoryLotService.disposeLot("lot1", req);
+
+        assertThat(lot.getQuantity()).isEqualByComparingTo("450.0");
+        assertThat(lot.getStatus()).isEqualTo(LotStatus.Rejected);
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void disposeLot_completeRejected() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Rejected, new BigDecimal("250.0"));
+        LotDisposeRequest req = new LotDisposeRequest();
+        req.setDisposalQuantity(new BigDecimal("250.0"));
+        req.setReason("Complete disposal");
+        req.setPerformedBy("admin");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+        when(lotRepository.save(lot)).thenReturn(lot);
+
+        inventoryLotService.disposeLot("lot1", req);
+
+        assertThat(lot.getStatus()).isEqualTo(LotStatus.Depleted);
+        assertThat(lot.getQuantity()).isEqualByComparingTo("0.0");
+        verify(transactionRepository).save(any(InventoryTransaction.class));
+    }
+
+    @Test
+    void disposeLot_depletedInsufficientQuantity_throwsBusinessException() {
+        InventoryLot lot = buildLot("lot1", LotStatus.Depleted, new BigDecimal("0.0"));
+        LotDisposeRequest req = new LotDisposeRequest();
+        req.setDisposalQuantity(new BigDecimal("100.0"));
+        req.setReason("Cannot dispose");
+
+        when(lotRepository.findById("lot1")).thenReturn(Optional.of(lot));
+
+        assertThatThrownBy(() -> inventoryLotService.disposeLot("lot1", req))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Insufficient");
+
+        verify(lotRepository, never()).save(any());
+    }
+
+    @Test
+    void disposeLot_notFound() {
+        LotDisposeRequest req = new LotDisposeRequest();
+        req.setDisposalQuantity(new BigDecimal("100.0"));
+        req.setReason("test");
+
+        when(lotRepository.findById("nonexistent")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> inventoryLotService.disposeLot("nonexistent", req))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Lot");
     }
 
     // ── getTransactions ────────────────────────────────────────────────────

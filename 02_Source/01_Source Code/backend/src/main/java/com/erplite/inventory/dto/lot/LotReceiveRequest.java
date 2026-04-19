@@ -15,9 +15,11 @@ public class LotReceiveRequest {
     @NotBlank(message = "Material ID is required")
     private String materialId;
 
+    @NotBlank(message = "Manufacturer name is required")
     @Size(max = 100)
     private String manufacturerName;
 
+    @NotBlank(message = "Manufacturer lot is required")
     @Size(max = 100)
     private String manufacturerLot;
 
