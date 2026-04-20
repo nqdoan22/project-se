@@ -8,9 +8,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.TypedQuery;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "rag.sync.enabled", havingValue = "true", matchIfMissing = true)
-@RequiredArgsConstructor
 public class SyncWorker {
 
     private static final LocalDateTime EPOCH = LocalDateTime.of(1970, 1, 1, 0, 0);
@@ -41,11 +40,28 @@ public class SyncWorker {
     private final RagEmbedLogRepository embedLogRepo;
     private final EmbeddingClient embeddingClient;
     private final VectorStore vectorStore;
+    private final SyncWorker self;
 
     @PersistenceContext
     private EntityManager em;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
+
+    public SyncWorker(List<RowSerializer<?>> serializers,
+                      RagProperties props,
+                      RagSyncStateRepository stateRepo,
+                      RagEmbedLogRepository embedLogRepo,
+                      EmbeddingClient embeddingClient,
+                      VectorStore vectorStore,
+                      @Lazy SyncWorker self) {
+        this.serializers = serializers;
+        this.props = props;
+        this.stateRepo = stateRepo;
+        this.embedLogRepo = embedLogRepo;
+        this.embeddingClient = embeddingClient;
+        this.vectorStore = vectorStore;
+        this.self = self;
+    }
 
     @PostConstruct
     void bootstrap() {
@@ -74,7 +90,7 @@ public class SyncWorker {
         try {
             for (RowSerializer<?> s : serializers) {
                 try {
-                    syncOneTable(s);
+                    self.syncOneTable(s);
                 } catch (Exception e) {
                     log.error("RAG: sync failed for table {}: {}", s.sourceTable(), e.getMessage(), e);
                     recordTableError(s.sourceTable(), e.getMessage());
@@ -86,7 +102,7 @@ public class SyncWorker {
     }
 
     @Transactional
-    <T> void syncOneTable(RowSerializer<T> s) {
+    public <T> void syncOneTable(RowSerializer<T> s) {
         String table = s.sourceTable();
         RagSyncState state = stateRepo.findById(table).orElseGet(() -> {
             RagSyncState fresh = RagSyncState.builder()
