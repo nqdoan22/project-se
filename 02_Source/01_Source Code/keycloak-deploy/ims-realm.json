@@ -1,0 +1,70 @@
+{
+  "id": "ims",
+  "realm": "ims",
+  "displayName": "IMS",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "Admin", "description": "Full system access" },
+      { "name": "InventoryManager", "description": "Manage inventory lots and materials" },
+      { "name": "QualityControl", "description": "Manage QC tests" },
+      { "name": "Production", "description": "Manage production batches" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ims-frontend",
+      "name": "IMS Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3000/*",
+        "https://*.vercel.app/*",
+        "https://*.onrender.com/*",
+        "https://*.netlify.app/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "+"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "post.logout.redirect.uris": "+"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin@ims.local",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin@123",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["Admin", "InventoryManager", "QualityControl", "Production"]
+    }
+  ]
+}

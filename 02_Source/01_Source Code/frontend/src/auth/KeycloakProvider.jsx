@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import keycloak from './keycloak';
 import AuthContext from './AuthContext';
 
-const KEYCLOAK_TIMEOUT_MS = 3000;
+const KEYCLOAK_TIMEOUT_MS = 15000;
 
 export default function KeycloakProvider({ children }) {
   const [ready, setReady] = useState(false);
