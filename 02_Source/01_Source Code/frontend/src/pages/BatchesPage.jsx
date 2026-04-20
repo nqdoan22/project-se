@@ -331,7 +331,7 @@ function BatchDetailModal({ batchId, lots, onClose }) {
             )}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <span className="detail-panel-title">
-                Nguyên liệu ({batch.confirmedComponentCount ?? 0}/{batch.componentCount ?? 0} đã xác nhận)
+                Nguyên liệu ({batch.components?.filter(item => item.actualQuantity != null && item.actualQuantity > 0)?.length ?? 0}/{batch.components?.length ?? 0} đã xác nhận)
               </span>
               <button
                 className="btn btn-outline btn-sm"
@@ -574,7 +574,7 @@ export default function BatchesPage() {
                     <th>Ngày sản xuất</th>
                     <th>Ngày hết hạn</th>
                     <th>Trạng thái</th>
-                    <th>Nguyên liệu</th>
+                    {/* <th>Nguyên liệu</th> */}
                     <th style={{ textAlign: 'right' }}>Hành động</th>
                   </tr>
                 </thead>
@@ -594,11 +594,11 @@ export default function BatchesPage() {
                         {b.expirationDate ? new Date(b.expirationDate).toLocaleDateString('vi-VN') : '—'}
                       </td>
                       <td><BatchStatusBadge status={b.status} /></td>
-                      <td>
+                      {/* <td>
                         <span style={{ color: b.confirmedComponentCount === b.componentCount && b.componentCount > 0 ? 'var(--success)' : 'var(--text-secondary)' }}>
                           {b.confirmedComponentCount ?? 0}/{b.componentCount ?? 0}
                         </span>
-                      </td>
+                      </td> */}
                       <td>
                         <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                           <button
