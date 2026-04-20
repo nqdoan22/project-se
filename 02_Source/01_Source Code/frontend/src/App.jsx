@@ -9,6 +9,7 @@ import BatchComponentsPage from "./pages/BatchComponentsPage";
 import LabelsPage from "./pages/LabelsPage";
 import DashboardPage from "./pages/DashboardPage";
 import UsersPage from "./pages/UsersPage";
+import ChatPage from "./pages/ChatPage";
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/labels" element={<LabelsPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/users" element={<UsersPage />} />
+            <Route path="/chat" element={<ChatPage />} />
           </Routes>
         </main>
       </div>

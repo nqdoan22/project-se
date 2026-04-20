@@ -9,9 +9,9 @@ version = '0.0.1-SNAPSHOT'
 description = 'inventory'
 
 java {
-    /*toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }*/
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
@@ -24,6 +24,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+    // RAG: Qdrant + OpenAI accessed via Spring RestClient (REST) — no extra SDKs.
+    // Only Jackson + spring-web (already transitive). If you later want gRPC/Qdrant
+    // SDK, add `io.qdrant:client:1.12.1`; for OpenAI SDK, `com.openai:openai-java`.
+
     runtimeOnly 'com.mysql:mysql-connector-j'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

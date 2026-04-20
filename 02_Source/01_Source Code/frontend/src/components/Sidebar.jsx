@@ -31,6 +31,12 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    label: 'AI Assistant',
+    items: [
+      { to: '/chat', icon: '💬', label: 'Trò chuyện (Chat)' },
+    ],
+  },
+  {
     label: 'Administration',
     items: [
       { to: '/users', icon: '👥', label: 'Người dùng (Users)' },

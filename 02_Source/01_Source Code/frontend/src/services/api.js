@@ -101,6 +101,18 @@ export const reportApi = {
   getInventory: () => api.get('/reports/inventory'),
 };
 
+// ─── RAG Chat ─────────────────────────────────────────────────────────────────
+export const ragApi = {
+  chat: (data) => api.post('/rag/chat', data).then((r) => r.data),
+  feedback: (queryLogId, feedback) =>
+    api.post(`/rag/feedback/${queryLogId}`, { feedback }),
+  listSessions: () => api.get('/rag/sessions').then((r) => r.data),
+  getMessages: (sessionId) =>
+    api.get(`/rag/sessions/${sessionId}/messages`).then((r) => r.data),
+  deleteSession: (sessionId) => api.delete(`/rag/sessions/${sessionId}`),
+  health: () => api.get('/rag/health').then((r) => r.data),
+};
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 export const userApi = {
   getAll: (params = {}) => api.get('/users', { params }),
