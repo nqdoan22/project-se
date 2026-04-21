@@ -29,16 +29,16 @@
 
 ## Implementation Status Summary
 
-| Module | Backend | Frontend |
-|--------|---------|----------|
-| Material CRUD | ✅ Done | ✅ Done |
-| Inventory Lot (Receive + Status) | ✅ Done | 🔄 Partial |
-| Inventory Transactions | ✅ Done | 🔄 Partial |
-| QC Testing | ❌ Not started | ❌ Not started |
-| Production Batch | ❌ Not started | ❌ Not started |
-| Label Management | ❌ Not started | ❌ Not started |
-| Reports / Dashboard | ❌ Not started | ❌ Not started |
-| User Management / RBAC | ❌ Not started | ❌ Not started |
+| Module                           | Backend        | Frontend       |
+| -------------------------------- | -------------- | -------------- |
+| Material CRUD                    | ✅ Done        | ✅ Done        |
+| Inventory Lot (Receive + Status) | ✅ Done        | 🔄 Partial     |
+| Inventory Transactions           | ✅ Done        | 🔄 Partial     |
+| QC Testing                       | 🔄 In progress | 🔄 In progress |
+| Production Batch                 | 🔄 In progress | 🔄 In progress |
+| Label Management                 | 🔄 In progress | 🔄 In progress |
+| Reports / Dashboard              | 🔄 In progress | 🔄 In progress |
+| User Management / RBAC           | 🔄 In progress | 🔄 In progress |
 
 ---
 
@@ -46,15 +46,15 @@
 
 ### 0.1 Required Tools
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| JDK | 21+ (LTS) | Backend runtime |
-| Gradle | 9.3+ (wrapper included) | Backend build |
-| Node.js | 20+ LTS | Frontend runtime |
-| npm | 10+ | Frontend package manager |
-| MySQL | 8.0+ | Database |
-| Git | Any | Version control |
-| IntelliJ IDEA or VS Code | Latest | IDE |
+| Tool                     | Version                 | Purpose                  |
+| ------------------------ | ----------------------- | ------------------------ |
+| JDK                      | 21+ (LTS)               | Backend runtime          |
+| Gradle                   | 9.3+ (wrapper included) | Backend build            |
+| Node.js                  | 20+ LTS                 | Frontend runtime         |
+| npm                      | 10+                     | Frontend package manager |
+| MySQL                    | 8.0+                    | Database                 |
+| Git                      | Any                     | Version control          |
+| IntelliJ IDEA or VS Code | Latest                  | IDE                      |
 
 ### 0.2 Project Structure
 
@@ -136,6 +136,7 @@ USE inventory_management;
 Run the complete `dbscript.sql` or create tables in the following order (respecting FK dependencies):
 
 **Order of creation:**
+
 1. `Users`
 2. `Materials`
 3. `LabelTemplates`
@@ -152,7 +153,7 @@ CREATE TABLE Users (
     username     VARCHAR(50)  NOT NULL UNIQUE,
     email        VARCHAR(100) NOT NULL UNIQUE,
     password     VARCHAR(100) NOT NULL,
-    role         ENUM('Admin','InventoryManager','QualityControl','Production','Viewer') NOT NULL DEFAULT 'Viewer',
+    role         ENUM('Admin','Manager','QC','Operator') NOT NULL DEFAULT 'Operator',
     is_active    BOOLEAN DEFAULT TRUE,
     last_login   DATETIME NULL,
     created_date DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -312,30 +313,30 @@ com.erplite.inventory/
 
 Every new module must follow the same patterns:
 
-| Layer | Convention |
-|-------|-----------|
-| **Entity** | `@Entity`, `@Table(name="snake_case")`, UUID PK generated in `@PrePersist`, Lombok `@Data @NoArgsConstructor @AllArgsConstructor @Builder` |
-| **Request DTO** | `@Data`, Jakarta `@NotBlank`/`@NotNull`/`@Size` validations |
-| **Response DTO** | `@Data`, static `fromEntity(Entity e)` factory method |
-| **Repository** | `extends JpaRepository<Entity, String>`, custom finders by convention |
-| **Service** | `@Service @RequiredArgsConstructor @Transactional(readOnly=true)`, write methods annotated `@Transactional` |
-| **Controller** | `@RestController @RequestMapping("/api/...") @RequiredArgsConstructor @CrossOrigin(origins="*")` |
-| **Exceptions** | Throw `ResourceNotFoundException("Entity", "field", value)` for 404; `BusinessException("message")` for business rule violations |
+| Layer            | Convention                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Entity**       | `@Entity`, `@Table(name="snake_case")`, UUID PK generated in `@PrePersist`, Lombok `@Data @NoArgsConstructor @AllArgsConstructor @Builder` |
+| **Request DTO**  | `@Data`, Jakarta `@NotBlank`/`@NotNull`/`@Size` validations                                                                                |
+| **Response DTO** | `@Data`, static `fromEntity(Entity e)` factory method                                                                                      |
+| **Repository**   | `extends JpaRepository<Entity, String>`, custom finders by convention                                                                      |
+| **Service**      | `@Service @RequiredArgsConstructor @Transactional(readOnly=true)`, write methods annotated `@Transactional`                                |
+| **Controller**   | `@RestController @RequestMapping("/api/...") @RequiredArgsConstructor @CrossOrigin(origins="*")`                                           |
+| **Exceptions**   | Throw `ResourceNotFoundException("Entity", "field", value)` for 404; `BusinessException("message")` for business rule violations           |
 
 ### 2.3 Existing API Endpoints (Reference)
 
 ```
-GET    /api/materials                   → list (query: keyword, type)
-GET    /api/materials/{id}              → detail
-POST   /api/materials                   → create
-PUT    /api/materials/{id}              → update
-DELETE /api/materials/{id}              → delete (blocked if lots exist)
+GET    /api/v1/materials                   → list (query: keyword, type)
+GET    /api/v1/materials/{id}              → detail
+POST   /api/v1/materials                   → create
+PUT    /api/v1/materials/{id}              → update
+DELETE /api/v1/materials/{id}              → delete (blocked if lots exist)
 
-GET    /api/lots                        → list (query: materialId, status)
-GET    /api/lots/{id}                   → detail
-POST   /api/lots/receive                → create lot (status=Quarantine)
-PATCH  /api/lots/{id}/status            → update status
-GET    /api/lots/{id}/transactions      → transaction history
+GET    /api/v1/lots                        → list (query: materialId, status)
+GET    /api/v1/lots/{id}                   → detail
+POST   /api/v1/lots/receive                → create lot (status=Quarantine)
+PATCH  /api/v1/lots/{id}/status            → update status
+GET    /api/v1/lots/{id}/transactions      → transaction history
 ```
 
 ---
@@ -509,6 +510,7 @@ public interface QCTestRepository extends JpaRepository<QCTest, String> {
 ### 3.4 Create Service: `QCTestService.java`
 
 **Business rules:**
+
 - Cannot add tests to a lot that is `Rejected` or `Depleted`.
 - After recording a result, if **all** tests for the lot are `Pass` → set lot to `Accepted`.
 - If **any** test is `Fail` → set lot to `Rejected`.
@@ -621,12 +623,12 @@ public class QCTestService {
 
 ### 3.5 Create Controller: `QCTestController.java`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/qctests?lotId={id}` | All tests for a lot |
-| `GET` | `/api/qctests/{id}` | Test detail |
-| `POST` | `/api/qctests` | Create new test |
-| `PUT` | `/api/qctests/{id}` | Update test result |
+| Method | Endpoint                  | Description         |
+| ------ | ------------------------- | ------------------- |
+| `GET`  | `/api/qctests?lotId={id}` | All tests for a lot |
+| `GET`  | `/api/qctests/{id}`       | Test detail         |
+| `POST` | `/api/qctests`            | Create new test     |
+| `PUT`  | `/api/qctests/{id}`       | Update test result  |
 
 ```java
 @RestController
@@ -713,7 +715,7 @@ Also add the endpoint to `InventoryLotController`:
 
 ```java
 /**
- * POST /api/lots/{id}/split
+ * POST /api/v1/lots/{id}/split
  * Body: { "sampleQty": 0.500, "performedBy": "jdoe" }
  */
 @PostMapping("/{id}/split")
@@ -878,6 +880,7 @@ public interface BatchComponentRepository extends JpaRepository<BatchComponent, 
 ### 4.4 Create Service: `ProductionBatchService.java`
 
 **Business rules:**
+
 - Only `Accepted` lots with `expirationDate >= today` and `quantity >= plannedQuantity` can be added as components.
 - Confirm usage: deduct `actualQuantity` from `InventoryLot.quantity`, create `Usage` transaction, auto-set lot to `Depleted` if quantity reaches 0.
 - Batch can only be set to `Complete` when all components have a non-null `actualQuantity`.
@@ -885,14 +888,14 @@ public interface BatchComponentRepository extends JpaRepository<BatchComponent, 
 
 **Methods to implement:**
 
-| Method | Description |
-|--------|-------------|
-| `getAllBatches(BatchStatus status)` | List batches, optional filter by status |
-| `getBatchById(String id)` | Detail with components |
-| `createBatch(ProductionBatchRequestDTO dto)` | Create with status=Planned |
-| `addComponent(BatchComponentRequestDTO dto)` | Add lot to batch |
-| `confirmActualUsage(String componentId, ConfirmUsageRequestDTO dto)` | Record actual qty, create Usage transaction |
-| `updateBatchStatus(String id, BatchStatus newStatus, String performedBy)` | Advance status with validation |
+| Method                                                                    | Description                                 |
+| ------------------------------------------------------------------------- | ------------------------------------------- |
+| `getAllBatches(BatchStatus status)`                                       | List batches, optional filter by status     |
+| `getBatchById(String id)`                                                 | Detail with components                      |
+| `createBatch(ProductionBatchRequestDTO dto)`                              | Create with status=Planned                  |
+| `addComponent(BatchComponentRequestDTO dto)`                              | Add lot to batch                            |
+| `confirmActualUsage(String componentId, ConfirmUsageRequestDTO dto)`      | Record actual qty, create Usage transaction |
+| `updateBatchStatus(String id, BatchStatus newStatus, String performedBy)` | Advance status with validation              |
 
 **Key snippet — confirm actual usage:**
 
@@ -946,14 +949,14 @@ public BatchComponentResponseDTO confirmActualUsage(String componentId, ConfirmU
 
 ### 4.5 Create Controller: `ProductionBatchController.java`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/batches` | List batches (query: status, productId) |
-| `GET` | `/api/batches/{id}` | Batch detail with components |
-| `POST` | `/api/batches` | Create batch |
-| `PATCH` | `/api/batches/{id}/status` | Advance status |
-| `POST` | `/api/batches/{id}/components` | Add component |
-| `PATCH` | `/api/batches/components/{componentId}/confirm` | Confirm actual usage |
+| Method  | Endpoint                                        | Description                             |
+| ------- | ----------------------------------------------- | --------------------------------------- |
+| `GET`   | `/api/batches`                                  | List batches (query: status, productId) |
+| `GET`   | `/api/batches/{id}`                             | Batch detail with components            |
+| `POST`  | `/api/batches`                                  | Create batch                            |
+| `PATCH` | `/api/batches/{id}/status`                      | Advance status                          |
+| `POST`  | `/api/batches/{id}/components`                  | Add component                           |
+| `PATCH` | `/api/batches/components/{componentId}/confirm` | Confirm actual usage                    |
 
 ---
 
@@ -1013,12 +1016,12 @@ public class LabelTemplate {
 
 Templates use `{{placeholder}}` syntax. Supported placeholders by label type:
 
-| Label Type | Available Placeholders |
-|-----------|----------------------|
-| `RawMaterial` | `{{lotId}}`, `{{materialName}}`, `{{partNumber}}`, `{{manufacturerLot}}`, `{{expirationDate}}`, `{{storageLocation}}`, `{{quantity}}`, `{{unitOfMeasure}}` |
-| `Sample` | All RawMaterial placeholders + `{{parentLotId}}`, `{{sampleDate}}`, `{{isSample}}` |
-| `FinishedProduct` | `{{batchNumber}}`, `{{productName}}`, `{{batchSize}}`, `{{unitOfMeasure}}`, `{{manufactureDate}}`, `{{expirationDate}}` |
-| `Status` | `{{lotId}}`, `{{materialName}}`, `{{status}}`, `{{statusDate}}` |
+| Label Type        | Available Placeholders                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RawMaterial`     | `{{lotId}}`, `{{materialName}}`, `{{partNumber}}`, `{{manufacturerLot}}`, `{{expirationDate}}`, `{{storageLocation}}`, `{{quantity}}`, `{{unitOfMeasure}}` |
+| `Sample`          | All RawMaterial placeholders + `{{parentLotId}}`, `{{sampleDate}}`, `{{isSample}}`                                                                         |
+| `FinishedProduct` | `{{batchNumber}}`, `{{productName}}`, `{{batchSize}}`, `{{unitOfMeasure}}`, `{{manufactureDate}}`, `{{expirationDate}}`                                    |
+| `Status`          | `{{lotId}}`, `{{materialName}}`, `{{status}}`, `{{statusDate}}`                                                                                            |
 
 ### 5.3 Create DTOs and Repository
 
@@ -1099,14 +1102,14 @@ private Map<String, String> resolveVariables(String sourceType, String sourceId)
 
 ### 5.5 Create Controller: `LabelController.java`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/labels/templates` | List templates (query: labelType) |
-| `GET` | `/api/labels/templates/{id}` | Template detail |
-| `POST` | `/api/labels/templates` | Create template |
-| `PUT` | `/api/labels/templates/{id}` | Update template |
-| `DELETE` | `/api/labels/templates/{id}` | Delete template |
-| `POST` | `/api/labels/generate` | Generate label (returns rendered HTML) |
+| Method   | Endpoint                     | Description                            |
+| -------- | ---------------------------- | -------------------------------------- |
+| `GET`    | `/api/labels/templates`      | List templates (query: labelType)      |
+| `GET`    | `/api/labels/templates/{id}` | Template detail                        |
+| `POST`   | `/api/labels/templates`      | Create template                        |
+| `PUT`    | `/api/labels/templates/{id}` | Update template                        |
+| `DELETE` | `/api/labels/templates/{id}` | Delete template                        |
+| `POST`   | `/api/labels/generate`       | Generate label (returns rendered HTML) |
 
 ---
 
@@ -1148,12 +1151,12 @@ public class LotSummaryDTO {
 
 **Methods to implement:**
 
-| Method | Description |
-|--------|-------------|
-| `getDashboard()` | Count aggregates for all lot statuses |
-| `getNearExpiryLots(int days)` | Lots expiring within N days (default 30) |
-| `getLotTraceability(String lotId)` | Full lot detail + all transactions + QC tests + batch usage |
-| `getQCReport(LocalDate from, LocalDate to)` | Pass/fail counts and rates per material |
+| Method                                      | Description                                                 |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| `getDashboard()`                            | Count aggregates for all lot statuses                       |
+| `getNearExpiryLots(int days)`               | Lots expiring within N days (default 30)                    |
+| `getLotTraceability(String lotId)`          | Full lot detail + all transactions + QC tests + batch usage |
+| `getQCReport(LocalDate from, LocalDate to)` | Pass/fail counts and rates per material                     |
 
 **Near-expiry query — add to `InventoryLotRepository`:**
 
@@ -1164,12 +1167,12 @@ List<InventoryLot> findNearExpiry(@Param("today") LocalDate today, @Param("cutof
 
 ### 6.3 Create Controller: `ReportController.java`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/reports/dashboard` | Inventory dashboard summary |
-| `GET` | `/api/reports/near-expiry?days=30` | Near-expiry lots |
-| `GET` | `/api/reports/lots/{id}/trace` | Full lot traceability |
-| `GET` | `/api/reports/qc?from=&to=` | QC pass/fail report |
+| Method | Endpoint                           | Description                 |
+| ------ | ---------------------------------- | --------------------------- |
+| `GET`  | `/api/reports/dashboard`           | Inventory dashboard summary |
+| `GET`  | `/api/reports/near-expiry?days=30` | Near-expiry lots            |
+| `GET`  | `/api/reports/lots/{id}/trace`     | Full lot traceability       |
+| `GET`  | `/api/reports/qc?from=&to=`        | QC pass/fail report         |
 
 ---
 
@@ -1200,23 +1203,23 @@ frontend/src/
 
 These CSS classes are already defined and must be reused:
 
-| Class | Purpose |
-|-------|---------|
-| `.page-header` / `.page-header-left` | Top bar with title and action button |
-| `.page-body` | Main content area |
-| `.card` | White bordered content card |
-| `.filter-bar` | Flex row for filters |
-| `.filter-chips` / `.chip.active` | Type filter chips |
-| `.table-wrapper > table` | Styled data table |
-| `.btn .btn-primary .btn-outline .btn-danger .btn-sm` | Button variants |
-| `.form-control` | Input/select styling |
-| `.form-group .form-full .form-grid .form-label .required` | Form layout |
-| `.modal-body .modal-footer` | Modal sections |
-| `.alert .alert-error .alert-success` | Alert messages |
-| `.loading-center .spinner` | Loading state |
-| `.empty-state .empty-icon` | Empty list state |
-| `.td-mono .td-primary .text-muted` | Table cell variants |
-| `.type-badge` | Material type chip |
+| Class                                                     | Purpose                              |
+| --------------------------------------------------------- | ------------------------------------ |
+| `.page-header` / `.page-header-left`                      | Top bar with title and action button |
+| `.page-body`                                              | Main content area                    |
+| `.card`                                                   | White bordered content card          |
+| `.filter-bar`                                             | Flex row for filters                 |
+| `.filter-chips` / `.chip.active`                          | Type filter chips                    |
+| `.table-wrapper > table`                                  | Styled data table                    |
+| `.btn .btn-primary .btn-outline .btn-danger .btn-sm`      | Button variants                      |
+| `.form-control`                                           | Input/select styling                 |
+| `.form-group .form-full .form-grid .form-label .required` | Form layout                          |
+| `.modal-body .modal-footer`                               | Modal sections                       |
+| `.alert .alert-error .alert-success`                      | Alert messages                       |
+| `.loading-center .spinner`                                | Loading state                        |
+| `.empty-state .empty-icon`                                | Empty list state                     |
+| `.td-mono .td-primary .text-muted`                        | Table cell variants                  |
+| `.type-badge`                                             | Material type chip                   |
 
 ### 7.3 API Client Pattern
 
@@ -1224,35 +1227,38 @@ All new modules must add their API calls to `services/api.js` following the esta
 
 ```js
 export const qcTestApi = {
-  getByLot:  (lotId)      => api.get('/qctests', { params: { lotId } }),
-  getById:   (id)         => api.get(`/qctests/${id}`),
-  create:    (data)       => api.post('/qctests', data),
-  update:    (id, data)   => api.put(`/qctests/${id}`, data),
+  getByLot: (lotId) => api.get("/qctests", { params: { lotId } }),
+  getById: (id) => api.get(`/qctests/${id}`),
+  create: (data) => api.post("/qctests", data),
+  update: (id, data) => api.put(`/qctests/${id}`, data),
 };
 
 export const batchApi = {
-  getAll:           (params = {})       => api.get('/batches', { params }),
-  getById:          (id)                => api.get(`/batches/${id}`),
-  create:           (data)              => api.post('/batches', data),
-  updateStatus:     (id, status, by)    => api.patch(`/batches/${id}/status`, { status, performedBy: by }),
-  addComponent:     (id, data)          => api.post(`/batches/${id}/components`, data),
-  confirmUsage:     (componentId, data) => api.patch(`/batches/components/${componentId}/confirm`, data),
+  getAll: (params = {}) => api.get("/batches", { params }),
+  getById: (id) => api.get(`/batches/${id}`),
+  create: (data) => api.post("/batches", data),
+  updateStatus: (id, status, by) =>
+    api.patch(`/batches/${id}/status`, { status, performedBy: by }),
+  addComponent: (id, data) => api.post(`/batches/${id}/components`, data),
+  confirmUsage: (componentId, data) =>
+    api.patch(`/batches/components/${componentId}/confirm`, data),
 };
 
 export const labelApi = {
-  getTemplates: (params = {}) => api.get('/labels/templates', { params }),
-  getTemplate:  (id)          => api.get(`/labels/templates/${id}`),
-  create:       (data)        => api.post('/labels/templates', data),
-  update:       (id, data)    => api.put(`/labels/templates/${id}`, data),
-  delete:       (id)          => api.delete(`/labels/templates/${id}`),
-  generate:     (data)        => api.post('/labels/generate', data),
+  getTemplates: (params = {}) => api.get("/labels/templates", { params }),
+  getTemplate: (id) => api.get(`/labels/templates/${id}`),
+  create: (data) => api.post("/labels/templates", data),
+  update: (id, data) => api.put(`/labels/templates/${id}`, data),
+  delete: (id) => api.delete(`/labels/templates/${id}`),
+  generate: (data) => api.post("/labels/generate", data),
 };
 
 export const reportApi = {
-  getDashboard:  ()           => api.get('/reports/dashboard'),
-  getNearExpiry: (days = 30)  => api.get('/reports/near-expiry', { params: { days } }),
-  traceability:  (lotId)      => api.get(`/reports/lots/${lotId}/trace`),
-  qcReport:      (from, to)   => api.get('/reports/qc', { params: { from, to } }),
+  getDashboard: () => api.get("/reports/dashboard"),
+  getNearExpiry: (days = 30) =>
+    api.get("/reports/near-expiry", { params: { days } }),
+  traceability: (lotId) => api.get(`/reports/lots/${lotId}/trace`),
+  qcReport: (from, to) => api.get("/reports/qc", { params: { from, to } }),
 };
 ```
 
@@ -1276,12 +1282,13 @@ src/components/
 ### 8.2 Complete `LotsPage.jsx`
 
 **Required features:**
+
 1. **Filter bar** — filter by `status` chips (All / Quarantine / Accepted / Rejected / Depleted) and `materialId` dropdown.
 2. **Lot table** — columns: Lot ID (truncated), Material, Mfr Lot, Qty + UOM, Status badge, Expiration, Actions.
 3. **Receive Lot button** → opens receive modal.
 4. **Row actions:** View details (expand row or drawer), Update Status, Split Sample, View Transactions.
 5. **Receive Lot form fields:**
-   - Material (dropdown from `/api/materials`)
+   - Material (dropdown from `/api/v1/materials`)
    - Manufacturer Lot number (text)
    - Quantity (number, > 0)
    - Unit of Measure (text, e.g. kg, L, pcs)
@@ -1290,24 +1297,24 @@ src/components/
    - Storage Location (text)
    - Performed By (text)
 6. **Status update** — inline PATCH with a `<select>` showing only valid next statuses.
-7. **Transaction drawer** — slide-in panel showing `GET /api/lots/{id}/transactions`.
+7. **Transaction drawer** — slide-in panel showing `GET /api/v1/lots/{id}/transactions`.
 
 ### 8.3 Key Implementation Notes for Lots UI
 
 ```jsx
 // Status transition rules (mirror backend)
 const VALID_TRANSITIONS = {
-  Quarantine: ['Accepted', 'Rejected'],
-  Accepted:   ['Depleted'],
-  Rejected:   ['Depleted'],
-  Depleted:   [],
+  Quarantine: ["Accepted", "Rejected"],
+  Accepted: ["Depleted"],
+  Rejected: ["Depleted"],
+  Depleted: [],
 };
 
 // Near-expiry warning: highlight row if expirationDate < 30 days from today
 const isNearExpiry = (dateStr) => {
   const expiry = new Date(dateStr);
-  const today  = new Date();
-  const diff   = (expiry - today) / (1000 * 60 * 60 * 24);
+  const today = new Date();
+  const diff = (expiry - today) / (1000 * 60 * 60 * 24);
   return diff >= 0 && diff <= 30;
 };
 ```
@@ -1337,16 +1344,16 @@ src/components/
 
 ### 9.3 `QCTestForm.jsx` — Fields
 
-| Field | Type | Notes |
-|-------|------|-------|
-| Test Type | Select | Identity / Potency / Microbial / GrowthPromotion / Physical / Chemical |
-| Test Method | Text | Required |
-| Test Date | Date | Required, default today |
-| Test Result | Text | e.g. "1.02 mg/g" |
-| Acceptance Criteria | Text | e.g. "0.95–1.05 mg/g" |
-| Result Status | Select | Pending / Pass / Fail |
-| Performed By | Text | Required |
-| Verified By | Text | Optional, secondary reviewer |
+| Field               | Type   | Notes                                                                  |
+| ------------------- | ------ | ---------------------------------------------------------------------- |
+| Test Type           | Select | Identity / Potency / Microbial / GrowthPromotion / Physical / Chemical |
+| Test Method         | Text   | Required                                                               |
+| Test Date           | Date   | Required, default today                                                |
+| Test Result         | Text   | e.g. "1.02 mg/g"                                                       |
+| Acceptance Criteria | Text   | e.g. "0.95–1.05 mg/g"                                                  |
+| Result Status       | Select | Pending / Pass / Fail                                                  |
+| Performed By        | Text   | Required                                                               |
+| Verified By         | Text   | Optional, secondary reviewer                                           |
 
 ### 9.4 Route Addition
 
@@ -1356,6 +1363,7 @@ src/components/
 ```
 
 Add to `Sidebar.jsx`:
+
 ```jsx
 { path: '/qctests', label: '🔬 QC Testing' }
 ```
@@ -1397,16 +1405,15 @@ src/components/
 
 ```jsx
 const BATCH_STATUS_TRANSITIONS = {
-  Planned:    ['InProgress'],
-  InProgress: ['Complete', 'Rejected'],
-  Complete:   [],
-  Rejected:   [],
+  Planned: ["InProgress"],
+  InProgress: ["Complete", "Rejected"],
+  Complete: [],
+  Rejected: [],
 };
 
 // Only show Accepted, non-expired, non-depleted lots in AddComponentModal
-const availableLots = lots.filter(l =>
-  l.status === 'Accepted' &&
-  new Date(l.expirationDate) > new Date()
+const availableLots = lots.filter(
+  (l) => l.status === "Accepted" && new Date(l.expirationDate) > new Date(),
 );
 ```
 
@@ -1418,6 +1425,7 @@ const availableLots = lots.filter(l =>
 ```
 
 Add to `Sidebar.jsx`:
+
 ```jsx
 { path: '/batches', label: '🏭 Production Batches' }
 ```
@@ -1456,7 +1464,12 @@ export default function LabelPreview({ html, width, height }) {
   return (
     <div
       className="label-preview-wrapper"
-      style={{ width: `${width}cm`, height: `${height}cm`, border: '1px solid #ccc', padding: 8 }}
+      style={{
+        width: `${width}cm`,
+        height: `${height}cm`,
+        border: "1px solid #ccc",
+        padding: 8,
+      }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
@@ -1512,13 +1525,13 @@ Update `Sidebar.jsx` to include all navigation entries:
 
 ```jsx
 const NAV_ITEMS = [
-  { path: '/dashboard', label: '📊 Dashboard' },
-  { path: '/materials', label: '🧪 Materials' },
-  { path: '/lots',      label: '📦 Inventory Lots' },
-  { path: '/qctests',   label: '🔬 QC Testing' },
-  { path: '/batches',   label: '🏭 Production Batches' },
-  { path: '/labels',    label: '🏷 Labels' },
-  { path: '/reports',   label: '📋 Reports' },
+  { path: "/dashboard", label: "📊 Dashboard" },
+  { path: "/materials", label: "🧪 Materials" },
+  { path: "/lots", label: "📦 Inventory Lots" },
+  { path: "/qctests", label: "🔬 QC Testing" },
+  { path: "/batches", label: "🏭 Production Batches" },
+  { path: "/labels", label: "🏷 Labels" },
+  { path: "/reports", label: "📋 Reports" },
 ];
 ```
 
@@ -1531,12 +1544,14 @@ const NAV_ITEMS = [
 Create test files under `src/test/java/com/erplite/inventory/service/`.
 
 **`MaterialServiceTest.java`** — tests:
+
 - `createMaterial_success`
 - `createMaterial_throwsWhenPartNumberDuplicate`
 - `updateMaterial_throwsWhenPartNumberTakenByOther`
 - `deleteMaterial_throwsWhenLotsExist`
 
 **`InventoryLotServiceTest.java`** — tests:
+
 - `receiveNewLot_createsLotWithQuarantineStatus`
 - `receiveNewLot_createsReceiptTransaction`
 - `updateLotStatus_quarantineToAccepted_succeeds`
@@ -1545,12 +1560,14 @@ Create test files under `src/test/java/com/erplite/inventory/service/`.
 - `splitSampleLot_throwsWhenInsufficientQuantity`
 
 **`QCTestServiceTest.java`** — tests:
+
 - `createTest_pendingDoesNotChangeStatus`
 - `createTest_allPass_changesLotToAccepted`
 - `createTest_anyFail_changesLotToRejected`
 - `createTest_throwsWhenLotIsRejected`
 
 **`ProductionBatchServiceTest.java`** — tests:
+
 - `createBatch_succeeds`
 - `confirmUsage_deductsLotQuantity`
 - `confirmUsage_throwsWhenLotNotAccepted`
@@ -1558,6 +1575,7 @@ Create test files under `src/test/java/com/erplite/inventory/service/`.
 - `confirmUsage_setsLotDepleted_whenQuantityReachesZero`
 
 **Run all tests:**
+
 ```bash
 ./gradlew test
 # Report: build/reports/tests/test/index.html
@@ -1625,6 +1643,7 @@ curl -s $BASE/lots/$LOT_ID | jq '.quantity'
 Work through these flows in the browser (http://localhost:5173):
 
 **Materials:**
+
 - [ ] Create material — appears in list
 - [ ] Search by keyword and filter by type
 - [ ] Edit material — data updates correctly
@@ -1632,6 +1651,7 @@ Work through these flows in the browser (http://localhost:5173):
 - [ ] Delete material without lots — succeeds
 
 **Lots:**
+
 - [ ] Receive new lot — appears with `Quarantine` status
 - [ ] Filter lots by status
 - [ ] View transaction history for a lot
@@ -1639,12 +1659,14 @@ Work through these flows in the browser (http://localhost:5173):
 - [ ] Split sample lot — parent quantity decreases, child lot created
 
 **QC Tests:**
+
 - [ ] Add Pending test — lot stays Quarantine
 - [ ] Update test to Pass — if all Pass, lot becomes Accepted
 - [ ] Add Fail test — lot becomes Rejected
 - [ ] Cannot add test to Rejected lot
 
 **Production Batches:**
+
 - [ ] Create batch — status Planned
 - [ ] Advance to InProgress
 - [ ] Add lot component (only Accepted lots shown)
@@ -1652,6 +1674,7 @@ Work through these flows in the browser (http://localhost:5173):
 - [ ] Complete batch when all components confirmed
 
 **Labels:**
+
 - [ ] Create template with HTML content
 - [ ] Generate label for a lot — preview renders
 - [ ] Generate label for a batch — placeholders populated
@@ -1663,6 +1686,7 @@ Work through these flows in the browser (http://localhost:5173):
 ### 14.1 Build Artifacts
 
 **Backend:**
+
 ```bash
 cd "02_Source/01_Source Code/backend"
 ./gradlew bootJar
@@ -1670,6 +1694,7 @@ cd "02_Source/01_Source Code/backend"
 ```
 
 **Frontend:**
+
 ```bash
 cd "02_Source/01_Source Code/frontend"
 npm run build
@@ -1694,7 +1719,7 @@ spring.datasource.password=${DB_PASSWORD}
 Create `02_Source/01_Source Code/docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -1735,6 +1760,7 @@ volumes:
 ```
 
 **Backend `Dockerfile`:**
+
 ```dockerfile
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
@@ -1749,6 +1775,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
 **Frontend `Dockerfile`:**
+
 ```dockerfile
 FROM node:20-alpine AS build
 WORKDIR /app
@@ -1764,6 +1791,7 @@ EXPOSE 80
 ```
 
 **Frontend `nginx.conf`:**
+
 ```nginx
 server {
     listen 80;
@@ -1785,6 +1813,7 @@ server {
 ```
 
 **Start everything:**
+
 ```bash
 cd "02_Source/01_Source Code"
 docker compose up --build
@@ -1842,36 +1871,36 @@ Week 8   Phase 13 (Full testing) + Phase 14 (Deployment)
 
 ## Quick Reference: All API Endpoints
 
-| Module | Method | Path | Description |
-|--------|--------|------|-------------|
-| Materials | GET | `/api/materials` | List (keyword, type) |
-| | GET | `/api/materials/{id}` | Detail |
-| | POST | `/api/materials` | Create |
-| | PUT | `/api/materials/{id}` | Update |
-| | DELETE | `/api/materials/{id}` | Delete |
-| Lots | GET | `/api/lots` | List (materialId, status) |
-| | GET | `/api/lots/{id}` | Detail |
-| | POST | `/api/lots/receive` | Receive new lot |
-| | PATCH | `/api/lots/{id}/status` | Update status |
-| | POST | `/api/lots/{id}/split` | Split sample lot |
-| | GET | `/api/lots/{id}/transactions` | Transaction history |
-| QC Tests | GET | `/api/qctests?lotId=` | Tests for a lot |
-| | GET | `/api/qctests/{id}` | Detail |
-| | POST | `/api/qctests` | Create test |
-| | PUT | `/api/qctests/{id}` | Update result |
-| Batches | GET | `/api/batches` | List (status, productId) |
-| | GET | `/api/batches/{id}` | Detail + components |
-| | POST | `/api/batches` | Create batch |
-| | PATCH | `/api/batches/{id}/status` | Update status |
-| | POST | `/api/batches/{id}/components` | Add component |
-| | PATCH | `/api/batches/components/{id}/confirm` | Confirm usage |
-| Labels | GET | `/api/labels/templates` | List templates |
-| | GET | `/api/labels/templates/{id}` | Detail |
-| | POST | `/api/labels/templates` | Create template |
-| | PUT | `/api/labels/templates/{id}` | Update template |
-| | DELETE | `/api/labels/templates/{id}` | Delete template |
-| | POST | `/api/labels/generate` | Generate label HTML |
-| Reports | GET | `/api/reports/dashboard` | Summary counts |
-| | GET | `/api/reports/near-expiry?days=` | Near-expiry lots |
-| | GET | `/api/reports/lots/{id}/trace` | Lot traceability |
-| | GET | `/api/reports/qc?from=&to=` | QC pass/fail report |
+| Module    | Method | Path                                   | Description               |
+| --------- | ------ | -------------------------------------- | ------------------------- |
+| Materials | GET    | `/api/v1/materials`                    | List (keyword, type)      |
+|           | GET    | `/api/v1/materials/{id}`               | Detail                    |
+|           | POST   | `/api/v1/materials`                    | Create                    |
+|           | PUT    | `/api/v1/materials/{id}`               | Update                    |
+|           | DELETE | `/api/v1/materials/{id}`               | Delete                    |
+| Lots      | GET    | `/api/v1/lots`                         | List (materialId, status) |
+|           | GET    | `/api/v1/lots/{id}`                    | Detail                    |
+|           | POST   | `/api/v1/lots/receive`                 | Receive new lot           |
+|           | PATCH  | `/api/v1/lots/{id}/status`             | Update status             |
+|           | POST   | `/api/v1/lots/{id}/split`              | Split sample lot          |
+|           | GET    | `/api/v1/lots/{id}/transactions`       | Transaction history       |
+| QC Tests  | GET    | `/api/qctests?lotId=`                  | Tests for a lot           |
+|           | GET    | `/api/qctests/{id}`                    | Detail                    |
+|           | POST   | `/api/qctests`                         | Create test               |
+|           | PUT    | `/api/qctests/{id}`                    | Update result             |
+| Batches   | GET    | `/api/batches`                         | List (status, productId)  |
+|           | GET    | `/api/batches/{id}`                    | Detail + components       |
+|           | POST   | `/api/batches`                         | Create batch              |
+|           | PATCH  | `/api/batches/{id}/status`             | Update status             |
+|           | POST   | `/api/batches/{id}/components`         | Add component             |
+|           | PATCH  | `/api/batches/components/{id}/confirm` | Confirm usage             |
+| Labels    | GET    | `/api/labels/templates`                | List templates            |
+|           | GET    | `/api/labels/templates/{id}`           | Detail                    |
+|           | POST   | `/api/labels/templates`                | Create template           |
+|           | PUT    | `/api/labels/templates/{id}`           | Update template           |
+|           | DELETE | `/api/labels/templates/{id}`           | Delete template           |
+|           | POST   | `/api/labels/generate`                 | Generate label HTML       |
+| Reports   | GET    | `/api/reports/dashboard`               | Summary counts            |
+|           | GET    | `/api/reports/near-expiry?days=`       | Near-expiry lots          |
+|           | GET    | `/api/reports/lots/{id}/trace`         | Lot traceability          |
+|           | GET    | `/api/reports/qc?from=&to=`            | QC pass/fail report       |

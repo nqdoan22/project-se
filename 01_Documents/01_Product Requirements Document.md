@@ -1,218 +1,349 @@
-## 1. Tổng quan luồng (workflow) theo quan hệ bảng:
+# 01 - Product Requirements Document
 
-```
+## 1. Mục tiêu tài liệu
+
+Tài liệu này mô tả yêu cầu sản phẩm cho hệ thống quản lý kho vật tư và lô sản xuất, tập trung vào:
+
+- Các vai trò sử dụng hệ thống.
+- Các vấn đề hiện tại trong vận hành thực tế.
+- Các mục tiêu nghiệp vụ cần đạt được.
+- Các luồng nghiệp vụ chính (bao gồm cả bước thủ công và bước trên hệ thống).
+- Các yêu cầu chức năng, phi chức năng và tiêu chí chấp nhận ở mức sản phẩm.
+
+## 2. Bối cảnh và phạm vi nghiệp vụ
+
+### 2.1 Bối cảnh
+
+Doanh nghiệp sản xuất cần kiểm soát vòng đời vật tư theo lô, từ lúc nhận hàng, kiểm nghiệm chất lượng (QC), cấp phát vào sản xuất, đến in nhãn và truy xuất lịch sử. Mô hình hiện tại có nhiều thao tác thủ công, dễ gây sai lệch số liệu tồn kho và khó truy vết khi có sự cố chất lượng.
+
+### 2.2 Phạm vi trong giai đoạn hiện tại
+
+- Quản lý master data vật tư/sản phẩm.
+- Nhập kho theo lô và quản lý vòng đời lot.
+- Quản lý QC test cho lot.
+- Quản lý đợt sản xuất (production batch) và cấp phát nguyên liệu.
+- In nhãn theo template cho lot/batch.
+- Theo dõi giao dịch kho (inventory transactions) để truy xuất nguồn gốc.
+
+### 2.3 Ngoài phạm vi (out of scope) giai đoạn hiện tại
+
+- Lập kế hoạch sản xuất nâng cao (MRP/APS).
+- Quản lý mua hàng và nhà cung cấp đầy đủ (PO lifecycle end-to-end).
+- Quản lý bảo trì máy móc (CMMS).
+- Tích hợp sâu với ERP bên ngoài (nếu có, sẽ thực hiện ở phase sau).
+
+## 3. Vai trò người dùng và mục tiêu theo vai trò
+
+### 3.1 Admin
+
+- Vấn đề hiện tại:
+  - Danh mục vật tư, template nhãn và phân quyền phân tán, khó kiểm soát phiên bản.
+- Mục tiêu:
+  - Quản lý tập trung master data và cấu hình hệ thống.
+  - Đảm bảo phân quyền rõ ràng theo vai trò.
+
+### 3.2 Warehouse Operator
+
+- Vấn đề hiện tại:
+  - Nhập/xuất kho theo lô ghi nhận rời rạc, khó đối chiếu tồn thực tế và tồn hệ thống.
+- Mục tiêu:
+  - Ghi nhận nhanh, đúng và đủ các giao dịch Receipt/Usage/Split/Adjustment/Transfer/Disposal.
+  - Luôn biết lô nào có thể dùng cho sản xuất.
+
+### 3.3 QC Staff / QC Approver
+
+- Vấn đề hiện tại:
+  - Kết quả kiểm nghiệm chưa liên kết chặt với trạng thái lot, gây rủi ro cấp phát nhầm lô.
+- Mục tiêu:
+  - Quản lý kết quả kiểm nghiệm theo từng lot.
+  - Tự động kiểm soát trạng thái Quarantine/Accepted/Rejected theo rule nghiệp vụ.
+
+### 3.4 Production Operator / Production Manager
+
+- Vấn đề hiện tại:
+  - Cấp phát nguyên liệu cho batch dễ sai định mức và khó truy xuất lot đã dùng.
+- Mục tiêu:
+  - Tạo và quản lý production batch có đầy đủ thành phần nguyên liệu.
+  - Tự động trừ tồn theo actual usage, có traceability đầy đủ.
+
+### 3.5 QA/Compliance/Manager
+
+- Vấn đề hiện tại:
+  - Mất thời gian tổng hợp lịch sử biến động để điều tra sai lệch/chất lượng.
+- Mục tiêu:
+  - Có báo cáo và audit trail rõ ràng, truy xuất nhanh theo lot và batch.
+
+## 4. Vấn đề cốt lõi cần giải quyết
+
+- Sai lệch tồn kho do ghi nhận thủ công và thiếu chuẩn hóa transaction.
+- Trạng thái lot không đồng bộ với kết quả QC.
+- Cấp phát nguyên liệu cho batch thiếu kiểm tra điều kiện dùng được.
+- In nhãn chưa nhất quán, dễ thiếu thông tin bắt buộc.
+- Truy xuất nguồn gốc lot-batch chậm khi có sự cố.
+
+## 5. Mục tiêu sản phẩm và chỉ số thành công
+
+### 5.1 Mục tiêu sản phẩm
+
+- Chuẩn hóa toàn bộ vòng đời lot từ Receipt đến Depleted.
+- Đảm bảo chỉ lot hợp lệ mới được đưa vào sản xuất.
+- Tạo liên kết truy xuất xuyên suốt giữa lot, QC test, transaction và production batch.
+- Chuẩn hóa in nhãn theo template.
+
+### 5.2 Chỉ số thành công (KPI)
+
+- 100% giao dịch kho có audit user và timestamp.
+- 100% lot dùng cho sản xuất có trạng thái Accepted tại thời điểm cấp phát.
+- Thời gian truy xuất lịch sử một lot bất kỳ dưới 30 giây.
+- Giảm tối thiểu 50% lỗi nhập liệu thủ công sau khi vận hành ổn định.
+
+## 6. Luồng nghiệp vụ tổng quan (business workflow)
+
+```mermaid
 flowchart LR
-  U[Users]:::t
-
-  M[Materials]:::t -->|1:N material_id| L[InventoryLots]:::t
-  L -->|1:N lot_id| T[InventoryTransactions]:::t
-  L -->|1:N lot_id| QC[QCTests]:::t
-
-  M -->|1:N product_id| PB[ProductionBatches]:::t
-  PB -->|1:N batch_id| BC[BatchComponents]:::t
-  BC -->|N:1 lot_id| L
-
-  LT[LabelTemplates]:::t -. used by .-> L
-  LT -. used by .-> PB
-
-classDef t fill:#f7f7f7,stroke:#333,stroke-width:1px;
+  A[Nhận vật tư] --> B[Tạo lot ở trạng thái Quarantine]
+  B --> C[In nhãn Raw Material]
+  C --> D[QC kiểm nghiệm]
+  D -->|All Pass| E[Lot Accepted]
+  D -->|Any Fail| F[Lot Rejected]
+  E --> G[Tạo Production Batch]
+  G --> H[Thêm lot vào BatchComponents]
+  H --> I[Xác nhận actual usage và trừ tồn]
+  I --> J[Hoàn tất batch]
+  J --> K[In nhãn Finished Product]
 ```
 
-## 2.“Bảng nào có dữ liệu gì” (những cột quan trọng theo workflow)
+## 7. Luồng nghiệp vụ chi tiết (bao gồm bước thủ công và bước hệ thống)
 
-### A. Users (người thực hiện thao tác)
+### 7.1 Luồng chính: Từ nhập kho đến hoàn tất sản xuất
 
-- Dùng để điền các trường audit như performed_by, added_by, verified_by.
-- Các cột chính: user_id, username, email, password, role, is_active, last_login, created_date, modified_date.
+1. Warehouse Operator nhận vật tư và kiểm tra chứng từ (thủ công).
+2. Operator tạo Inventory Lot trên hệ thống với trạng thái Quarantine.
+3. Hệ thống ghi Receipt transaction và cập nhật tồn.
+4. Operator in nhãn Raw Material để dán lô vật lý.
+5. QC thực hiện kiểm nghiệm (một phần thủ công ở phòng lab, một phần nhập liệu lên hệ thống).
+6. QC/Approver cập nhật kết quả; hệ thống tự động đổi trạng thái lot:
+   - All pass: Accepted.
+   - Có fail: Rejected.
+7. Production tạo batch cho sản phẩm mục tiêu.
+8. Production thêm lot hợp lệ vào batch và nhập actual usage.
+9. Hệ thống tạo Usage transaction, trừ tồn lot và kiểm tra depleted.
+10. Batch chuyển Complete khi đủ điều kiện; in nhãn Finished Product.
 
-### B. Materials (master data vật tư / sản phẩm)
+### 7.2 Luồng phụ: Tạo sample lot
 
-- Là “gốc” để tạo lot và cũng là “product” cho batch (thông qua product_id).
-- Cột chính: material_id, part_number, material_name, material_type, storage_conditions, specification_document, created_date, modified_date.
+1. QC/Operator yêu cầu tách mẫu từ lot gốc.
+2. Hệ thống tạo sample lot với is_sample=true và parent_lot_id.
+3. Hệ thống ghi transaction tách mẫu để cân bằng tồn.
+4. In nhãn Sample cho lot mẫu.
 
-### C. InventoryLots (tồn kho theo lô)
+### 7.3 Luồng phụ: Điều chỉnh và xử lý ngoại lệ
 
-- Đại diện cho “một lần nhập” hoặc “một lô vật tư”: có status, quantity, ngày nhận/hết hạn…
-- Các trường quan trọng theo biến động:
-  - status: Quarantine / Accepted / Rejected / Depleted
-  - quantity: số lượng hiện tại (bị tăng/giảm theo transaction)
-  - is_sample + parent_lot_id: phục vụ tách sample từ lot gốc
+1. Khi có chênh lệch kiểm kê, Operator thực hiện Adjustment kèm lý do.
+2. Khi lot không còn sử dụng được, thực hiện Disposal theo quyền hạn.
+3. Mọi thao tác đều để lại audit trail phục vụ kiểm soát tuân thủ.
 
-### D. InventoryTransactions (lịch sử tăng/giảm theo lot)
+## 8. Yêu cầu chức năng
 
-- Ghi nhận movement: Receipt / Usage / Split / Transfer / Adjustment / Disposal
-- Trường quan trọng:
-  - transaction_type
-  - quantity (dương/âm tuỳ loại)
-  - lot_id
-  - reference_id (VD batch_number / order…)
-  - performed_by (ai làm)
-  - transaction_date
+### FR-01 Quản lý người dùng và phân quyền
 
-### E. QCTests (kết quả kiểm nghiệm cho lot)
+- Hệ thống hỗ trợ vai trò: Admin, Manager, QC, Operator.
+- Mọi thao tác quan trọng ghi nhận performed_by/added_by/verified_by.
 
-- Gắn theo lot_id, nhiều record cho 1 lot.
-- Quan trọng nhất:
-  - test_type, test_method, test_date
-  - result_status: Pass / Fail / Pending
-  - performed_by, verified_by
+### FR-02 Quản lý master data Materials
 
-### F. ProductionBatches (đợt sản xuất)
+- Tạo/sửa/xóa/xem Materials.
+- part_number là duy nhất.
+- Quản lý material_type, specification_document và thông tin liên quan.
 
-- Có status: Planned / In Progress / Complete / Rejected
-- Liên kết sản phẩm qua product_id trỏ sang Materials.
+### FR-03 Nhập kho theo lot
+
+- Tạo lot mới với thông tin bắt buộc: material_id, quantity, UOM, received_date, expiration_date.
+- Lot mới mặc định ở trạng thái Quarantine.
+- Tự động tạo Receipt transaction dương.
+
+### FR-04 Quản lý QC test
+
+- Một lot có thể có nhiều QC tests.
+- Mỗi test có trạng thái Pending/Pass/Fail.
+- Hệ thống tự động cập nhật trạng thái lot theo rule all-pass/any-fail.
+
+### FR-05 Quản lý production batch
+
+- Tạo batch cho product_id.
+- Vòng đời batch: Planned -> In Progress -> Complete/Rejected.
+- Quản lý thành phần nguyên liệu qua BatchComponents.
+
+### FR-06 Cấp phát nguyên liệu và trừ tồn
+
+- Khi xác nhận actual_quantity, hệ thống tạo Usage transaction âm.
+- Không cho phép cấp phát khi lot:
+  - Không ở trạng thái Accepted.
+  - Không đủ tồn.
+  - Đã hết hạn hoặc bị đánh dấu không hợp lệ.
+
+### FR-07 Quản lý sample lot
+
+- Cho phép tách sample lot từ lot cha.
+- Lưu parent_lot_id, is_sample và ghi transaction tương ứng.
+
+### FR-08 In nhãn theo template
+
+- Quản lý LabelTemplates theo label_type: Raw Material, Sample, Finished Product, Status.
+- Cho phép preview và in nhãn từ dữ liệu lot/batch.
+
+### FR-09 Truy xuất lịch sử và báo cáo
+
+- Truy xuất toàn bộ InventoryTransactions theo lot hoặc batch.
+- Cung cấp báo cáo tồn kho theo trạng thái, hạn dùng và vị trí lưu trữ.
+
+### FR-10 Audit trail
+
+- Ghi nhận lịch sử thay đổi dữ liệu quan trọng.
+- Không cho phép sửa/xóa trái phép dữ liệu lịch sử giao dịch.
+
+## 9. Yêu cầu phi chức năng
+
+### NFR-01 Bảo mật
+
+- Xác thực và phân quyền theo RBAC.
+- API chỉ cho phép thao tác phù hợp quyền người dùng.
+
+### NFR-02 Hiệu năng
+
+- Các thao tác chính (xem danh sách lot, chi tiết batch, lịch sử transaction) phản hồi mục tiêu dưới 2 giây trong điều kiện tải tiêu chuẩn.
+
+### NFR-03 Độ tin cậy và toàn vẹn dữ liệu
+
+- Dữ liệu giao dịch phải nhất quán, không mất bản ghi khi có lỗi tạm thời.
+- Có cơ chế backup định kỳ.
+
+### NFR-04 Khả năng truy xuất và tuân thủ
+
+- Mọi giao dịch quan trọng có dấu vết người thực hiện và thời gian.
+- Hỗ trợ trích xuất dữ liệu phục vụ kiểm tra nội bộ/chất lượng.
+
+## 10. Quy tắc nghiệp vụ chính
+
+- BR-01: Lot mới nhập kho bắt buộc ở trạng thái Quarantine.
+- BR-02: Lot chỉ được cấp phát cho sản xuất khi trạng thái là Accepted.
+- BR-03: Nếu bất kỳ QC test nào Fail thì lot chuyển Rejected.
+- BR-04: Khi quantity lot về 0, hệ thống có thể chuyển trạng thái Depleted.
+- BR-05: Batch chỉ Complete khi các thành phần nguyên liệu đã được xác nhận usage theo tiêu chí vận hành.
+- BR-06: Mọi thay đổi tồn kho phải đi qua InventoryTransactions, không chỉnh trực tiếp số lượng mà không có lý do nghiệp vụ.
+
+## 11. Bảng dữ liệu cốt lõi theo workflow
+
+### 11.1 Users
+
+- Mục đích: quản lý tài khoản và audit.
+- Trường chính: user_id, username, email, role, is_active, last_login, created_date, modified_date.
+
+### 11.2 Materials
+
+- Mục đích: master data vật tư/sản phẩm.
+- Trường chính: material_id, part_number, material_name, material_type, specification_document, storage_conditions, created_date, modified_date.
+
+### 11.3 InventoryLots
+
+- Mục đích: quản lý tồn kho theo lô.
+- Trường chính: lot_id, material_id, quantity, unit_of_measure, status, received_date, expiration_date, is_sample, parent_lot_id.
+
+### 11.4 InventoryTransactions
+
+- Mục đích: ghi nhận biến động kho.
+- Loại giao dịch: Receipt, Usage, Split, Transfer, Adjustment, Disposal.
+- Trường chính: transaction_id, lot_id, transaction_type, quantity, reference_id, performed_by, transaction_date.
+
+### 11.5 QCTests
+
+- Mục đích: lưu kết quả kiểm nghiệm.
+- Trường chính: qc_test_id, lot_id, test_type, test_method, result_status, performed_by, verified_by, test_date.
+
+### 11.6 ProductionBatches
+
+- Mục đích: quản lý đợt sản xuất.
 - Trường chính: batch_id, product_id, batch_number, batch_size, unit_of_measure, manufacture_date, expiration_date, status.
 
-### G. BatchComponents (định mức & thực tế nguyên liệu dùng cho batch)
+### 11.7 BatchComponents
 
-- Link batch ↔ lot, có planned_quantity và actual_quantity.
-- Khi có actual usage, sẽ “trigger” InventoryTransaction Usage âm trên lot tương ứng (theo example flow).
+- Mục đích: liên kết lot nguyên liệu với batch.
+- Trường chính: batch_component_id, batch_id, lot_id, planned_quantity, actual_quantity, addition_date, added_by.
 
-### H. LabelTemplates (template in nhãn)
+### 11.8 LabelTemplates
 
-- Lưu template (không phải log nhãn đã in).
-- Nhãn được tạo bằng cách chọn label_type phù hợp và “populate” template_content bằng dữ liệu từ InventoryLot hoặc ProductionBatch.
+- Mục đích: quản lý mẫu nhãn.
+- Trường chính: template_id, label_type, template_content, width, height, created_date, modified_date.
 
-## 3.Workflow chi tiết theo từng bước (và “giá trị nào đổi như thế nào”)
+## 12. Luồng thay đổi dữ liệu chi tiết theo bước
 
-- Bước 0 — User đăng nhập (chuẩn bị audit)
-  - Bảng ảnh hưởng: Users
-  - Khi user login: có thể cập nhật last_login (nullable → timestamp).
-  - Sau này mọi thao tác sẽ ghi performed_by/added_by/verified_by.
-  - Giá trị thay đổi:
-    Users.last_login: NULL → 2025-01-29 14:30:00 (ví dụ trong tài liệu).
-- Bước 1 — Tạo Material (master data)
-  - Bảng tạo mới: Materials  
-    Ví dụ: tạo MAT-001 (Vitamin D3 100K).
-  - Giá trị thay đổi  
-    Tạo 1 dòng mới trong Materials:
-    - material_id = MAT-001
-    - material_type = API (ví dụ)
-    - created_date/modified_date = NOW
-- Bước 2 — Nhập kho: tạo InventoryLot + ghi Receipt transaction
-  - Theo tài liệu: nhận lot lot-uuid-001 cho MAT-001 với 25.5 kg và tạo InventoryTransaction loại Receipt +25.5.  
-    Bảng tạo mới
-    - InventoryLots (tạo 1 dòng mới)
-    - lot_id = lot-uuid-001
-    - material_id = MAT-001
-    - status: thường bắt đầu ở Quarantine (vì có QC sau đó mới Accepted)
-    - quantity = 25.500
-    - unit_of_measure = kg
-    - received_date, expiration_date, …
-    - InventoryTransactions (tạo 1 dòng mới)
-    - transaction_type = Receipt
-    - quantity = +25.500
-    - lot_id = lot-uuid-001
-    - performed_by = jdoe (ví dụ)
-  - Giá trị thay đổi
-    - InventoryLots.quantity: 0 → 25.500
-    - InventoryLots.status: (khởi tạo) Quarantine
-    - InventoryTransactions: thêm record Receipt
-- Bước 3 — In nhãn Raw Material (không tạo bảng mới, chỉ “generate”)
-  - Tài liệu mô tả: dùng LabelTemplate TPL-RM-01 loại Raw Material, populate template bằng dữ liệu của lot.
-  - Bảng đọc dữ liệu
-    - LabelTemplates: chọn theo label_type = Raw Material (có template_content, width/height).
-    - InventoryLots + Materials: lấy field để đổ vào template (material_name, lot_id, manufacturer_lot, expiration_date, storage_location…).
-  - Giá trị thay đổi
-    - Không bắt buộc thay đổi DB (schema không có bảng “PrintedLabels/LabelRuns”). Chỉ là hành vi “generate + print”.
-- Bước 4 — QC cho lot: tạo QCTests, và cập nhật status của lot theo kết quả
-  - Tài liệu: tạo QC test (Identity, Potency) cho lot-uuid-001; khi tất cả Pass → lot.status = Accepted.
-  - Bảng tạo mới
-    - QCTests: tạo 1..n record cho lot_id = lot-uuid-001:
-    - test_type (Identity/Potency/…)
-    - result_status (Pending → Pass/Fail)
-    - performed_by, verified_by
-  - Giá trị thay đổi  
-    Trong QCTests:
-    - result_status: Pending → Pass (hoặc Fail)
+### Bước 0 - Đăng nhập
 
-    Trong InventoryLots:
-    - status: Quarantine → Accepted khi “all pass”
+- Bảng ảnh hưởng: Users.
+- Ví dụ thay đổi: last_login từ NULL sang timestamp hiện tại.
 
-  (Trường hợp fail: Rejected; trường hợp hết hàng: Depleted)
+### Bước 1 - Tạo Material
 
-- Bước 5 — Tạo sample lot từ lot gốc (nếu có)
-  - Tài liệu: nếu tạo sample lot từ lot-uuid-001 với is_sample: true thì in nhãn Sample, có thông tin parent lot, sample date…
-  - Bảng tạo mới / thay đổi
-    - InventoryLots:
-      - Tạo lot mới (sample lot):
-        - is_sample = true
-        - parent_lot_id = lot-uuid-001
-        - quantity = sample_qty
-    - InventoryTransactions (thường sẽ có để cân tồn)
-      - Gợi ý theo schema transaction_type = Split để tách từ lot cha sang lot con (schema có Split).
-      - Lot cha: ghi Split -sample_qty
-      - Lot con: ghi Receipt/Split +sample_qty (tuỳ rule bạn thiết kế; schema cho phép Split và Receipt)
-  - Giá trị thay đổi (điển hình)
-    - Lot cha (lot-uuid-001): quantity giảm theo sample
-    - Lot con (sample): quantity tăng tương ứng
-    - In nhãn Sample: chọn LabelTemplate label_type = Sample
+- Bảng tạo mới: Materials.
+- Ví dụ: material_id=MAT-001, material_type=API.
 
-- Bước 6 — Tạo ProductionBatch cho sản phẩm (product là 1 Material)
-  - Tài liệu: tạo batch-uuid-001 cho PROD-001 (một Material).
-  - Bảng tạo mới
-    - ProductionBatches:
-      - product_id = PROD-001 (FK → Materials)
-      - batch_number, batch_size, manufacture_date, expiration_date
-      - status khởi tạo: Planned (theo enum)
-  - Giá trị thay đổi
-    - Tạo 1 dòng mới; về sau status thường chuyển:
-      - Planned → In Progress → Complete (hoặc Rejected)
+### Bước 2 - Nhập kho lot
 
-- Bước 7 — Add nguyên liệu vào batch: BatchComponents + trừ tồn bằng Usage transaction
-  - Tài liệu: BatchComponent link batch-uuid-001 ↔ lot-uuid-001 planned/actual 2 kg, và trigger InventoryTransaction Usage -2kg trên lot đó.
-  - Bảng tạo mới / thay đổi
-    - BatchComponents (tạo mới)
-      - batch_id = batch-uuid-001
-      - lot_id = lot-uuid-001
-      - planned_quantity = 2.000
-      - actual_quantity = 2.000 (có thể ban đầu NULL rồi cập nhật sau)
-      - addition_date, added_by
-    - InventoryTransactions (tạo mới)
-      - transaction_type = Usage
-      - quantity = -2.000
-      - reference_id có thể là batch_number/batch_id (schema cho phép)
-      - performed_by = user thao tác
-    - InventoryLots (update)
-      - quantity: 25.500 → 23.500 (trừ 2.000)
-      - Nếu về 0 thì status có thể chuyển Depleted (enum có).
+- Bảng tạo mới: InventoryLots và InventoryTransactions.
+- Ví dụ: Receipt +25.500 kg cho lot-uuid-001.
 
-- Bước 8 — Hoàn tất batch: cập nhật status + in nhãn Finished Product
-  - Tài liệu: khi batch-uuid-001.status đổi sang Complete thì in nhãn Finished Product, populate bằng batch data (batch_number, product_name, manufacture_date, expiration_date, batch_size…).
-  - Bảng thay đổi
-    - ProductionBatches.status: In Progress → Complete
-  - Bảng đọc để in nhãn
-    - LabelTemplates chọn label_type = Finished Product
-    - ProductionBatches + Materials (để lấy product_name/material_name)
+### Bước 3 - In nhãn Raw Material
 
-- Bước 9 — Khi status lot/batch đổi: có thể in nhãn Status
-  - Tài liệu nói: nếu kết quả QC làm đổi trạng thái lot thì có thể generate nhãn Status để dán physical lot.
-  - Chi tiết label generation: status label xuất hiện khi lot/batch status đổi (vd Quarantine → Accepted).
+- Bảng đọc: LabelTemplates, InventoryLots, Materials.
+- Không bắt buộc phát sinh bản ghi mới nếu chưa có bảng log in nhãn.
 
-## 4. "Bảng biến động" (chốt lại: bước nào làm thay đổi field nào)
+### Bước 4 - QC cho lot
 
-### A. InventoryLots (biến động mạnh nhất)
+- Bảng tạo mới: QCTests.
+- Bảng cập nhật: InventoryLots.status Quarantine -> Accepted hoặc Rejected.
 
-- quantity thay đổi khi có InventoryTransactions (Receipt/Usage/Split/…)
-- status thay đổi theo QC & tình trạng tồn:
-  - Quarantine → Accepted khi QC pass hết
-  - Rejected nếu fail
-  - Depleted nếu quantity về 0
-- is_sample, parent_lot_id thay đổi khi tạo sample lot
+### Bước 5 - Tách sample lot
 
-### B. BatchComponents
+- Bảng tạo mới: InventoryLots (lot con).
+- Bảng tạo mới: InventoryTransactions (Split/Receipt theo rule thiết kế).
+- Bảng cập nhật: quantity lot cha giảm tương ứng.
 
-- planned_quantity thường set ngay khi plan
-- actual_quantity có thể:
-  - NULL lúc tạo → cập nhật sau khi cân/đong thực tế
-  - Khi actual_quantity được xác nhận, hệ thống tạo InventoryTransactions(Usage -actual) theo example flow.
+### Bước 6 - Tạo Production Batch
 
-### C. ProductionBatches
+- Bảng tạo mới: ProductionBatches.
+- Trạng thái khởi tạo: Planned.
 
-- status: Planned → In Progress → Complete/Rejected
-- Khi status = Complete → in nhãn Finished Product.
+### Bước 7 - Add nguyên liệu vào batch và usage
 
-### D. QCTests
+- Bảng tạo mới: BatchComponents và InventoryTransactions (Usage âm).
+- Bảng cập nhật: InventoryLots.quantity giảm theo actual usage.
 
-- result_status: Pending → Pass/Fail
-- Có thể dùng verified_by để "duyệt" kết quả.
+### Bước 8 - Hoàn tất batch và in nhãn thành phẩm
+
+- Bảng cập nhật: ProductionBatches.status In Progress -> Complete.
+- Bảng đọc để in nhãn: LabelTemplates, ProductionBatches, Materials.
+
+### Bước 9 - In nhãn trạng thái khi cần
+
+- Khi lot/batch đổi trạng thái quan trọng, hệ thống cho phép generate nhãn Status.
+
+## 13. Tiêu chí chấp nhận tổng thể cho PRD
+
+- Có mô tả rõ vai trò, vấn đề và mục tiêu theo vai trò.
+- Có luồng nghiệp vụ chính và luồng phụ từ góc nhìn vận hành thực tế.
+- Có mô tả bước thủ công và bước thực hiện trên hệ thống.
+- Có đầy đủ nhóm yêu cầu chức năng và phi chức năng cốt lõi.
+- Có business rules để kiểm soát trạng thái lot, batch, QC và giao dịch kho.
+- Có mô tả dữ liệu chính và biến động dữ liệu theo workflow.
+
+## 14. Giả định và ràng buộc
+
+- Hệ thống xác thực/ủy quyền sử dụng công cụ có sẵn của dự án (không tự phát triển IAM từ đầu).
+- Tất cả thời điểm giao dịch sử dụng cùng chuẩn múi giờ đã thống nhất toàn hệ thống.
+- Quy định QC chi tiết theo từng loại vật tư có thể được bổ sung trong các sprint tiếp theo.
+
+## 15. Truy vết sang tài liệu liên quan
+
+- Domain model chi tiết thực thể và quan hệ: 02_Domain Model.md.
+- Danh sách story và ưu tiên triển khai: 04_Product Backlog.md.
+- Kiến trúc giải pháp và cấu trúc hệ thống: 05_Architecture.md.

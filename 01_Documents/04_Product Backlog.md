@@ -1,73 +1,118 @@
-# 04 – Product Backlog  
-**Hệ thống Quản lý Kho – Inventory Management System (IMS)**
+# 04 - Product Backlog
 
-Ngày lập: [01/03/2026]  
-Phiên bản: 1.0 (dựa trên Business Case & Workflow v2025/2026)
+**Hệ thống Quản lý Kho - Inventory Management System (IMS)**
 
-## 1. Epic 1 – Quản lý Master Data & Danh mục
+Ngày cập nhật: 20/04/2026  
+Phiên bản: 2.0 (đồng bộ 1-1 với PRD mới)
 
-| # | User Story / Feature | Ưu tiên | Acceptance Criteria (chính) |
-|---|----------------------|--------|--------------------------------|
-| E1.1 | Là Admin, tôi muốn tạo/sửa/xóa danh mục Nguyên vật liệu (Materials) để quản lý master data | High | - CRUD đầy đủ cho Materials<br>- part_number unique<br>- material_type enum (API, Excipient, Packaging, …)<br>- Lưu specification_document (file/link) |
-| E1.2 | Là Admin/Manager, tôi muốn xem danh sách Materials với bộ lọc & tìm kiếm nhanh | High | - Tìm theo part_number, name, type<br>- Hiển thị version/control status nếu có |
-| E1.3 | Là Admin, tôi muốn quản lý Label Templates (tạo, sửa, preview) | High | - CRUD LabelTemplates<br>- Có field: label_type (Raw Material, Sample, Finished Product, Status), template_content (HTML/JSON), dimensions |
+## 1. Nguyên tắc xây dựng backlog
 
-## 2. Epic 2 – Nhập kho & Quản lý Lot (Receiving & Lot Lifecycle)
+- Mỗi epic/story đều truy vết được về FR/NFR/BR trong PRD.
+- Ưu tiên triển khai theo luồng giá trị end-to-end: nhận vật tư -> QC -> cấp phát -> hoàn tất batch -> truy xuất.
+- Acceptance Criteria tập trung vào kết quả kiểm chứng được.
 
-| # | User Story / Feature | Ưu tiên | Acceptance Criteria (chính) |
-|---|----------------------|--------|--------------------------------|
-| E2.1 | Là Operator, tôi muốn tạo mới Inventory Lot khi nhận hàng (Receive Material) | High | - Tạo lot mới → status = Quarantine<br>- Ghi InventoryTransaction (Receipt +qty)<br>- Bắt buộc: material_id, quantity, UOM, expiration_date, received_date, storage_location |
-| E2.2 | Hệ thống tự động generate & cho phép in nhãn Raw Material ngay sau khi tạo lot | High | - Sử dụng LabelTemplate loại Raw Material<br>- Populate: lot_id, material_name, expiration, manufacturer_lot, storage, QR/barcode |
-| E2.3 | Là QC, tôi muốn tạo nhiều QCTest cho một lot và ghi kết quả (Identity, Potency, …) | High | - Tạo nhiều record QCTests cho 1 lot_id<br>- result_status: Pending → Pass/Fail<br>- Có performed_by + verified_by |
-| E2.4 | Hệ thống tự động cập nhật lot.status khi hoàn tất QC | High | - All tests Pass → Quarantine → Accepted<br>- Có Fail → Quarantine → Rejected<br>- Ghi InventoryTransaction (Status Change) nếu cần |
-| E2.5 | Là Operator/QC, tôi muốn tạo Sample lot từ lot gốc (tách mẫu) | Medium | - Tạo lot mới: is_sample=true, parent_lot_id<br>- Ghi transaction Split (-qty cha, +qty con)<br>- In nhãn Sample (dùng template loại Sample) |
-| E2.6 | Là Operator, tôi muốn thực hiện các giao dịch khác: Adjustment, Transfer, Disposal | Medium | - Adjustment: +/– qty + lý do<br>- Disposal: chỉ cho lot Rejected/Depleted<br>- Transfer: thay đổi storage_location |
-| E2.7 | Hệ thống tự động chuyển lot → Depleted khi quantity ≤ 0 | High | - quantity = 0 → status = Depleted<br>- Không cho phép Usage/Production nếu Depleted |
+## 2. Product backlog theo epic
 
-## 3. Epic 3 – Quản lý Đợt sản xuất (Production Batch)
+### Epic E1 - Identity, Role, Audit (map FR-01, FR-10, NFR-01)
 
-| # | User Story / Feature | Ưu tiên | Acceptance Criteria (chính) |
-|---|----------------------|--------|--------------------------------|
-| E3.1 | Là Manager/Operator, tôi muốn tạo mới Production Batch cho một sản phẩm | High | - Chọn product_id (Materials)<br>- status khởi tạo = Planned<br>- Ghi batch_number (auto hoặc manual), batch_size, UOM, planned dates |
-| E3.2 | Là Operator, tôi muốn thêm nguyên liệu (lot) vào batch (Batch Components) | High | - Thêm planned_quantity cho từng lot<br>- Hiển thị tồn kho khả dụng (chỉ Accepted, not Depleted, not Expired) |
-| E3.3 | Là Operator, tôi muốn xác nhận actual usage → trừ tồn kho tự động | High | - Cập nhật actual_quantity<br>- Tự động tạo InventoryTransaction Usage –actual_qty<br>- Cập nhật InventoryLots.quantity<br>- Không cho phép nếu lot không đủ tồn hoặc status ≠ Accepted |
-| E3.4 | Là Operator/Manager, tôi muốn chuyển trạng thái batch: Planned → In Progress → Complete / Rejected | High | - Chỉ Complete khi tất cả components đã usage đủ<br>- Khi Complete → tự động gợi ý in nhãn Finished Product |
-| E3.5 | Hệ thống tự động generate & in nhãn Finished Product khi batch Complete | High | - Dùng LabelTemplate loại Finished Product<br>- Populate: batch_number, product_name, manufacture_date, expiration_date, batch_size, QR |
+| ID   | User Story                                                                          | Priority | Acceptance Criteria                                                                 | Map PRD       |
+| ---- | ----------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- | ------------- |
+| E1.1 | Là Admin, tôi muốn quản lý vai trò người dùng để kiểm soát quyền thao tác           | High     | Admin/Manager/QC/Operator có ma trận quyền rõ ràng; API từ chối thao tác trái quyền | FR-01, NFR-01 |
+| E1.2 | Là hệ thống, tôi muốn ghi nhận người thực hiện và thời điểm cho thao tác quan trọng | High     | Mọi thao tác tạo/sửa nghiệp vụ có performed_by và timestamp                         | FR-10         |
+| E1.3 | Là Admin, tôi muốn xem lịch sử thay đổi để audit nội bộ                             | High     | Có thể truy vấn lịch sử theo entity, user, thời gian                                | FR-10         |
 
-## 4. Epic 4 – In nhãn & Quản lý trạng thái (Labeling & Status Change)
+### Epic E2 - Master Data và Label Template (map FR-02, FR-08)
 
-| # | User Story / Feature | Ưu tiên | Acceptance Criteria (chính) |
-|---|----------------------|--------|--------------------------------|
-| E4.1 | Hệ thống hỗ trợ in nhãn Status khi lot/batch thay đổi trạng thái quan trọng | Medium | - Quarantine → Accepted → in Status label “Accepted”<br>- Rejected → in “Rejected – Do Not Use” |
-| E4.2 | Operator có thể in lại nhãn bất kỳ lúc nào cho lot/batch hiện có | Medium | - Chọn lot/batch → chọn label_type → preview → print |
+| ID   | User Story                                                              | Priority | Acceptance Criteria                                                  | Map PRD |
+| ---- | ----------------------------------------------------------------------- | -------- | -------------------------------------------------------------------- | ------- |
+| E2.1 | Là Admin, tôi muốn CRUD Materials để chuẩn hóa danh mục vật tư/sản phẩm | High     | CRUD đầy đủ; part_number unique; validate material_type              | FR-02   |
+| E2.2 | Là Admin/Manager, tôi muốn tìm kiếm Materials nhanh theo mã/tên/loại    | High     | Hỗ trợ filter part_number, material_name, material_type              | FR-02   |
+| E2.3 | Là Admin, tôi muốn CRUD LabelTemplates theo loại nhãn                   | High     | Hỗ trợ Raw Material/Sample/Finished Product/Status; preview template | FR-08   |
 
-## 5. Epic 5 – Báo cáo, Audit Trail & Giám sát
+### Epic E3 - Receiving và vòng đời lot (map FR-03, FR-04, FR-07, BR-01..BR-04)
 
-| # | User Story / Feature | Ưu tiên | Acceptance Criteria (chính) |
-|---|----------------------|--------|--------------------------------|
-| E5.1 | Là Manager/QC/Admin, tôi muốn xem tồn kho real-time (theo material/lot/status/expiration) | High | - Dashboard tồn kho<br>- Filter: status, material_type, near expiry (<30 ngày), location |
-| E5.2 | Là Manager/Admin, tôi muốn xem lịch sử giao dịch của bất kỳ lot nào (full traceability) | High | - Trace từ lot → tất cả InventoryTransactions<br>- Bao gồm reference (batch, order, QC test…) |
-| E5.3 | Hệ thống ghi audit log mọi thao tác thay đổi dữ liệu quan trọng | High | - Bảng AuditLog hoặc field audit (created_by, created_date, modified_by, …)<br>- Không cho phép xóa/sửa trực tiếp history |
-| E5.4 | Là Admin, tôi muốn xem báo cáo tuân thủ (QC pass rate, rejected lots, usage theo batch…) | Medium | - Báo cáo xuất Excel/PDF<br>- Thời gian < 30 giây |
+| ID   | User Story                                                            | Priority | Acceptance Criteria                                                                 | Map PRD      |
+| ---- | --------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- | ------------ |
+| E3.1 | Là Operator, tôi muốn tạo lot khi nhận hàng để ghi nhận tồn ban đầu   | High     | Tạo lot bắt buộc trường chính; status mặc định Quarantine; sinh Receipt transaction | FR-03, BR-01 |
+| E3.2 | Là Operator, tôi muốn in nhãn Raw Material sau khi tạo lot            | High     | Nhãn sinh từ template và dữ liệu lot/material, có preview trước in                  | FR-08        |
+| E3.3 | Là QC, tôi muốn nhập nhiều QCTest cho một lot                         | High     | Mỗi lot có thể có nhiều QCTest; trạng thái test Pending/Pass/Fail                   | FR-04        |
+| E3.4 | Là hệ thống, tôi muốn tự đổi trạng thái lot theo kết quả QC           | High     | All pass -> Accepted; any fail -> Rejected                                          | FR-04, BR-03 |
+| E3.5 | Là Operator/QC, tôi muốn tách sample lot từ lot cha                   | Medium   | Tạo lot con is_sample=true, parent_lot_id; ghi transaction tách mẫu                 | FR-07, BR-07 |
+| E3.6 | Là Operator, tôi muốn thực hiện Adjustment/Transfer/Disposal có lý do | Medium   | Transaction lưu rõ loại, số lượng, lý do, người thực hiện                           | FR-03        |
+| E3.7 | Là hệ thống, tôi muốn tự chuyển lot sang Depleted khi quantity về 0   | High     | quantity=0 thì trạng thái cập nhật Depleted theo rule                               | BR-04        |
 
-## 6. Epic 6 – Bảo mật, Hiệu năng & Vận hành (NFR liên quan)
+### Epic E4 - Production batch và usage (map FR-05, FR-06, BR-02, BR-05, BR-06)
 
-| # | User Story / Feature | Ưu tiên | Acceptance Criteria (chính) |
-|---|----------------------|--------|--------------------------------|
-| E6.1 | Hệ thống phải phân quyền theo vai trò (RBAC) | High | - Admin, Manager, QC, Operator có quyền khác nhau<br>- Không cho Operator duyệt QC, xóa transaction… |
-| E6.2 | Hệ thống chặn tự động các lot không dùng được | High | - Không cho Usage/Production nếu: status ≠ Accepted, quantity < required, expired |
-| E6.3 | API response time < 2 giây cho các thao tác chính | High | - Load lot list, transaction history, batch detail |
-| E6.4 | Hỗ trợ ít nhất 100 concurrent users & 10.000 giao dịch/ngày | High | - Stress test đạt yêu cầu |
-| E6.5 | Tự động backup hàng ngày & có monitoring/alert | Medium | - Health check endpoint<br>- Alert khi DB latency cao, disk full… |
+| ID   | User Story                                                         | Priority | Acceptance Criteria                                                                 | Map PRD             |
+| ---- | ------------------------------------------------------------------ | -------- | ----------------------------------------------------------------------------------- | ------------------- |
+| E4.1 | Là Manager/Operator, tôi muốn tạo Production Batch cho sản phẩm    | High     | Batch tạo mới ở Planned, có batch_number và thông tin bắt buộc                      | FR-05               |
+| E4.2 | Là Operator, tôi muốn thêm lot nguyên liệu vào batch               | High     | Chỉ hiển thị lot hợp lệ; lưu planned_quantity                                       | FR-05, BR-02        |
+| E4.3 | Là Operator, tôi muốn xác nhận actual usage để hệ thống tự trừ tồn | High     | Sinh Usage transaction âm; cập nhật tồn lot; chặn khi lot không hợp lệ/không đủ tồn | FR-06, BR-02, BR-06 |
+| E4.4 | Là Manager, tôi muốn chuyển trạng thái batch đúng luồng            | High     | Planned -> In Progress -> Complete/Rejected; Complete khi đạt điều kiện usage       | FR-05, BR-05        |
+| E4.5 | Là Operator, tôi muốn in nhãn Finished Product khi batch Complete  | High     | Nhãn lấy dữ liệu batch/material từ template Finished Product                        | FR-08               |
 
-## 7. Epic 7 – Các tính năng bổ trợ (Nice-to-have / Phase 2)
+### Epic E5 - Traceability, báo cáo và vận hành (map FR-09, NFR-02..NFR-04)
 
-- Tích hợp barcode/QR scanner khi nhận hàng & usage
-- Gửi email/Slack notification khi lot near expiry hoặc QC Fail
-- Export dữ liệu tuân thủ theo định dạng XML/CSV cho cơ quan quản lý
-- Dashboard KPI: % lot pass QC, inventory turnover, rejected quantity ratio
+| ID   | User Story                                                                   | Priority | Acceptance Criteria                                                   | Map PRD |
+| ---- | ---------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------- | ------- |
+| E5.1 | Là Manager/QC/Admin, tôi muốn xem dashboard tồn kho theo trạng thái/hạn dùng | High     | Có filter status, material_type, near-expiry, location                | FR-09   |
+| E5.2 | Là Manager/Admin, tôi muốn truy xuất lịch sử lot-batch end-to-end            | High     | Xem đầy đủ transaction theo lot, bao gồm reference tới batch/QC       | FR-09   |
+| E5.3 | Là hệ thống, tôi cần phản hồi thao tác chính trong mục tiêu dưới 2 giây      | High     | Đạt SLO cho truy vấn lot, batch, transaction trên môi trường kiểm thử | NFR-02  |
+| E5.4 | Là Admin, tôi muốn có backup định kỳ và giám sát health hệ thống             | Medium   | Có backup schedule, health check, cảnh báo cơ bản                     | NFR-03  |
+| E5.5 | Là QA/Compliance, tôi muốn xuất báo cáo phục vụ kiểm tra nội bộ              | Medium   | Xuất báo cáo theo thời gian, trạng thái QC, lot rejected              | NFR-04  |
 
-**Tổng số story hiện tại (ước tính):** ~35–40 story chính  
-**Ưu tiên triển khai Phase 1:** Epic 1 → 2 → 3 → 4 → 5 (core warehouse + production flow + traceability)
+## 3. Release plan
 
-Cập nhật backlog sẽ được thực hiện sau mỗi Sprint Review & Refinement.
+### Release R1 (Core flow)
+
+- E1.1, E1.2
+- E2.1, E2.3
+- E3.1, E3.3, E3.4
+- E4.1, E4.2, E4.3
+
+Mục tiêu: vận hành được luồng cốt lõi nhận lot -> QC -> usage cho batch.
+
+### Release R2 (Operational completeness)
+
+- E1.3
+- E2.2
+- E3.2, E3.5, E3.6, E3.7
+- E4.4, E4.5
+- E5.1, E5.2
+
+Mục tiêu: hoàn thiện in nhãn, sample, traceability toàn diện.
+
+### Release R3 (NFR and compliance)
+
+- E5.3, E5.4, E5.5
+
+Mục tiêu: đáp ứng hiệu năng, backup, báo cáo tuân thủ.
+
+## 4. Definition of Done áp dụng cho backlog
+
+- Story có acceptance criteria rõ và test được.
+- API/logic đáp ứng business rule liên quan trong PRD.
+- Có kiểm thử phù hợp (unit/integration hoặc test nghiệp vụ tương đương).
+- Có log/audit cho thao tác quan trọng.
+- Cập nhật tài liệu nếu thay đổi phạm vi hoặc rule.
+
+## 5. Traceability matrix PRD -> Backlog
+
+| PRD    | Story IDs        |
+| ------ | ---------------- |
+| FR-01  | E1.1             |
+| FR-02  | E2.1, E2.2       |
+| FR-03  | E3.1, E3.6       |
+| FR-04  | E3.3, E3.4       |
+| FR-05  | E4.1, E4.2, E4.4 |
+| FR-06  | E4.3             |
+| FR-07  | E3.5             |
+| FR-08  | E2.3, E3.2, E4.5 |
+| FR-09  | E5.1, E5.2       |
+| FR-10  | E1.2, E1.3       |
+| NFR-01 | E1.1             |
+| NFR-02 | E5.3             |
+| NFR-03 | E5.4             |
+| NFR-04 | E5.5             |
+
+Backlog sẽ được rà soát sau mỗi Sprint Review và cập nhật nếu có thay đổi ở PRD.

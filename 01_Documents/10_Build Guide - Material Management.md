@@ -12,12 +12,14 @@
 Module Material Management là **nền tảng** của toàn bộ hệ thống. Mọi hoạt động (nhập kho, sản xuất, QC…) đều phụ thuộc vào master data của Materials.
 
 **Phạm vi:**
+
 - CRUD nguyên vật liệu (Materials)
 - Quản lý Inventory Lot (nhập kho, trạng thái lot)
 - Ghi lịch sử giao dịch (InventoryTransactions)
 - Tìm kiếm, lọc danh sách
 
 **Stack hiện tại:**
+
 - Backend: Java Spring Boot, JPA/Hibernate, MySQL (`inventory_management`)
 - Package gốc: `com.erplite.inventory`
 - Frontend: React + Tailwind (chưa triển khai)
@@ -213,14 +215,14 @@ public interface MaterialRepository extends JpaRepository<Material, String> {
 
 Các method cần implement:
 
-| Method | Mô tả |
-|--------|-------|
-| `List<Material> getAllMaterials()` | Lấy tất cả vật tư |
-| `Optional<Material> getMaterialById(String id)` | Lấy theo ID |
-| `List<Material> searchMaterials(String keyword, MaterialType type)` | Tìm kiếm + lọc |
-| `Material createMaterial(MaterialDTO dto)` | Tạo mới, check `partNumber` unique |
-| `Material updateMaterial(String id, MaterialDTO dto)` | Cập nhật |
-| `void deleteMaterial(String id)` | Xoá (nếu chưa có lot liên kết) |
+| Method                                                              | Mô tả                              |
+| ------------------------------------------------------------------- | ---------------------------------- |
+| `List<Material> getAllMaterials()`                                  | Lấy tất cả vật tư                  |
+| `Optional<Material> getMaterialById(String id)`                     | Lấy theo ID                        |
+| `List<Material> searchMaterials(String keyword, MaterialType type)` | Tìm kiếm + lọc                     |
+| `Material createMaterial(MaterialDTO dto)`                          | Tạo mới, check `partNumber` unique |
+| `Material updateMaterial(String id, MaterialDTO dto)`               | Cập nhật                           |
+| `void deleteMaterial(String id)`                                    | Xoá (nếu chưa có lot liên kết)     |
 
 > ⚠️ **Validation:** Không cho xoá Material nếu đã có InventoryLot liên kết.
 
@@ -228,13 +230,13 @@ Các method cần implement:
 
 **Vị trí:** `src/main/java/com/erplite/inventory/controller/MaterialController.java`
 
-| HTTP Method | Endpoint | Chức năng |
-|------------|----------|-----------|
-| `GET` | `/api/materials` | Lấy danh sách (hỗ trợ query param `?keyword=&type=`) |
-| `GET` | `/api/materials/{id}` | Lấy chi tiết theo ID |
-| `POST` | `/api/materials` | Tạo material mới |
-| `PUT` | `/api/materials/{id}` | Cập nhật material |
-| `DELETE` | `/api/materials/{id}` | Xoá material |
+| HTTP Method | Endpoint                 | Chức năng                                            |
+| ----------- | ------------------------ | ---------------------------------------------------- |
+| `GET`       | `/api/v1/materials`      | Lấy danh sách (hỗ trợ query param `?keyword=&type=`) |
+| `GET`       | `/api/v1/materials/{id}` | Lấy chi tiết theo ID                                 |
+| `POST`      | `/api/v1/materials`      | Tạo material mới                                     |
+| `PUT`       | `/api/v1/materials/{id}` | Cập nhật material                                    |
+| `DELETE`    | `/api/v1/materials/{id}` | Xoá material                                         |
 
 ### 2.6 Kiểm thử API (Material)
 
@@ -242,18 +244,18 @@ Sử dụng Postman hoặc `curl`:
 
 ```bash
 # Tạo mới
-curl -X POST http://localhost:8080/api/materials \
+curl -X POST http://localhost:8080/api/v1/materials \
   -H "Content-Type: application/json" \
   -d '{"partNumber":"MAT-001","materialName":"Vitamin D3 100K","materialType":"API"}'
 
 # Lấy danh sách
-curl http://localhost:8080/api/materials
+curl http://localhost:8080/api/v1/materials
 
 # Tìm kiếm theo keyword
-curl "http://localhost:8080/api/materials?keyword=Vitamin"
+curl "http://localhost:8080/api/v1/materials?keyword=Vitamin"
 
 # Xoá
-curl -X DELETE http://localhost:8080/api/materials/MAT-001
+curl -X DELETE http://localhost:8080/api/v1/materials/MAT-001
 ```
 
 ---
@@ -265,6 +267,7 @@ curl -X DELETE http://localhost:8080/api/materials/MAT-001
 **Vị trí:** `src/main/java/com/erplite/inventory/entity/InventoryLot.java`
 
 Fields cần có:
+
 - `lotId` (UUID, PK)
 - `material` (`@ManyToOne` → `Material`)
 - `manufacturerLot`, `quantity`, `unitOfMeasure`
@@ -278,6 +281,7 @@ Fields cần có:
 **Vị trí:** `src/main/java/com/erplite/inventory/entity/InventoryTransaction.java`
 
 Fields cần có:
+
 - `transactionId` (UUID, PK)
 - `lot` (`@ManyToOne` → `InventoryLot`)
 - `transactionType` (`TransactionType` enum: `Receipt`, `Usage`, `Split`, `Transfer`, `Adjustment`, `Disposal`)
@@ -286,16 +290,17 @@ Fields cần có:
 
 ### 3.3 Tạo Service: `InventoryLotService.java`
 
-| Method | Logic nghiệp vụ |
-|--------|----------------|
-| `receiveNewLot(dto)` | Tạo lot (status=Quarantine) + ghi Receipt transaction (+qty) |
-| `getLotsByMaterial(materialId)` | Lấy lot theo material |
-| `getLotsByStatus(status)` | Lọc theo trạng thái |
-| `updateLotStatus(lotId, newStatus)` | Cập nhật status + ghi Status Change transaction |
-| `deductQuantity(lotId, qty, refId, performedBy)` | Trừ tồn + ghi Usage transaction; nếu qty=0 → Depleted |
-| `splitSampleLot(parentLotId, sampleQty)` | Tạo sample lot (is_sample=true) + ghi Split transaction |
+| Method                                           | Logic nghiệp vụ                                              |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `receiveNewLot(dto)`                             | Tạo lot (status=Quarantine) + ghi Receipt transaction (+qty) |
+| `getLotsByMaterial(materialId)`                  | Lấy lot theo material                                        |
+| `getLotsByStatus(status)`                        | Lọc theo trạng thái                                          |
+| `updateLotStatus(lotId, newStatus)`              | Cập nhật status + ghi Status Change transaction              |
+| `deductQuantity(lotId, qty, refId, performedBy)` | Trừ tồn + ghi Usage transaction; nếu qty=0 → Depleted        |
+| `splitSampleLot(parentLotId, sampleQty)`         | Tạo sample lot (is_sample=true) + ghi Split transaction      |
 
 > **Business rule quan trọng:**
+>
 > - Không Usage nếu `status ≠ Accepted`
 > - Không Usage nếu `quantity < required`
 > - Không Usage nếu `expirationDate < today`
@@ -303,14 +308,14 @@ Fields cần có:
 
 ### 3.4 Tạo Controller: `InventoryLotController.java`
 
-| HTTP Method | Endpoint | Chức năng |
-|------------|----------|-----------|
-| `GET` | `/api/lots` | Danh sách lot (filter: status, materialId, nearExpiry) |
-| `GET` | `/api/lots/{id}` | Chi tiết lot |
-| `POST` | `/api/lots/receive` | Nhập kho (tạo lot mới) |
-| `PATCH` | `/api/lots/{id}/status` | Cập nhật status |
-| `POST` | `/api/lots/{id}/split` | Tách sample lot |
-| `GET` | `/api/lots/{id}/transactions` | Lịch sử giao dịch của lot |
+| HTTP Method | Endpoint                         | Chức năng                                              |
+| ----------- | -------------------------------- | ------------------------------------------------------ |
+| `GET`       | `/api/v1/lots`                   | Danh sách lot (filter: status, materialId, nearExpiry) |
+| `GET`       | `/api/v1/lots/{id}`              | Chi tiết lot                                           |
+| `POST`      | `/api/v1/lots/receive`           | Nhập kho (tạo lot mới)                                 |
+| `PATCH`     | `/api/v1/lots/{id}/status`       | Cập nhật status                                        |
+| `POST`      | `/api/v1/lots/{id}/split`        | Tách sample lot                                        |
+| `GET`       | `/api/v1/lots/{id}/transactions` | Lịch sử giao dịch của lot                              |
 
 ---
 
@@ -328,25 +333,26 @@ src/features/material/
 │   ├── MaterialForm.jsx           # Form tạo/sửa
 │   └── MaterialFilter.jsx         # Bộ lọc (type, keyword)
 └── services/
-    └── materialApi.js             # Axios calls đến /api/materials
+    └── materialApi.js             # Axios calls đến /api/v1/materials
 ```
 
 ### 4.2 Xây dựng `materialApi.js`
 
 ```js
-import axios from 'axios';
-const BASE = 'http://localhost:8080/api/materials';
+import axios from "axios";
+const BASE = "http://localhost:8080/api/v1/materials";
 
 export const getAllMaterials = (params) => axios.get(BASE, { params });
-export const getMaterialById = (id)    => axios.get(`${BASE}/${id}`);
-export const createMaterial  = (data)  => axios.post(BASE, data);
-export const updateMaterial  = (id, data) => axios.put(`${BASE}/${id}`, data);
-export const deleteMaterial  = (id)    => axios.delete(`${BASE}/${id}`);
+export const getMaterialById = (id) => axios.get(`${BASE}/${id}`);
+export const createMaterial = (data) => axios.post(BASE, data);
+export const updateMaterial = (id, data) => axios.put(`${BASE}/${id}`, data);
+export const deleteMaterial = (id) => axios.delete(`${BASE}/${id}`);
 ```
 
 ### 4.3 Xây dựng `MaterialListPage.jsx`
 
 Tính năng:
+
 - Hiển thị bảng `MaterialTable` với cột: Part Number, Name, Type, Storage, Actions
 - Tích hợp `MaterialFilter` (lọc theo type, tìm theo keyword)
 - Nút **"+ Thêm vật tư"** mở modal `MaterialForm`
@@ -395,7 +401,8 @@ src/features/inventory/
 ### 5.2 Xây dựng `ReceiveLotForm.jsx`
 
 Form nhập kho cần có:
-- Chọn Material (dropdown từ `/api/materials`)
+
+- Chọn Material (dropdown từ `/api/v1/materials`)
 - Manufacturer Lot number
 - Quantity + Unit of Measure
 - Received Date (default: hôm nay)
@@ -406,12 +413,12 @@ Form nhập kho cần có:
 
 ### 5.3 Hiển thị `LotStatusBadge`
 
-| Status | Màu badge |
-|--------|-----------|
-| Quarantine | 🟡 Vàng |
-| Accepted | 🟢 Xanh lá |
-| Rejected | 🔴 Đỏ |
-| Depleted | ⚫ Xám |
+| Status     | Màu badge  |
+| ---------- | ---------- |
+| Quarantine | 🟡 Vàng    |
+| Accepted   | 🟢 Xanh lá |
+| Rejected   | 🔴 Đỏ      |
+| Depleted   | ⚫ Xám     |
 
 ---
 
@@ -436,11 +443,11 @@ Viết test cho `MaterialService` và `InventoryLotService`:
 ./gradlew bootRun
 
 # Test flow đầy đủ:
-# 1. POST /api/materials → tạo MAT-001
-# 2. POST /api/lots/receive → tạo lot với status=Quarantine
-# 3. GET /api/lots/{id} → kiểm tra status=Quarantine
-# 4. PATCH /api/lots/{id}/status body={status:Accepted} → chuyển Accepted
-# 5. GET /api/lots/{id}/transactions → xem lịch sử
+# 1. POST /api/v1/materials → tạo MAT-001
+# 2. POST /api/v1/lots/receive → tạo lot với status=Quarantine
+# 3. GET /api/v1/lots/{id} → kiểm tra status=Quarantine
+# 4. PATCH /api/v1/lots/{id}/status body={status:Accepted} → chuyển Accepted
+# 5. GET /api/v1/lots/{id}/transactions → xem lịch sử
 ```
 
 ### 6.3 Frontend Integration Test
