@@ -15,11 +15,10 @@ Tài liệu này mô tả cách nhóm quản lý dự án IMS gồm:
 
 | STT | Họ tên       | Vai trò chính      | Vai trò phụ          |
 | --- | ------------ | ------------------ | -------------------- |
-| 1   | Nguyễn Văn A | Team Lead, Backend | Architecture         |
-| 2   | Trần Thị B   | Backend            | API and Integration  |
-| 3   | Lê Văn C     | Frontend           | UX and Prototyping   |
-| 4   | Phạm Thị D   | QA                 | Test and Validation  |
-| 5   | Hoàng Văn E  | DevOps             | Deployment and CI/CD |
+| 1   | Nguyễn Văn Xanh | Team Lead, Developer | Test and Validation         |
+| 2   | Nguyễn Quang Doãn   | Deployment, CI/CD            |   |
+| 3   | Dương Đặng Thành Lâm    | Management, Planning, Docs           | Prototyping   |
+| 4   | Hoàng Túy Minh  | Developer                 | Test and Validation  |
 
 Ghi chú:
 

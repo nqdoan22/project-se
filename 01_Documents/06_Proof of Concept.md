@@ -134,3 +134,10 @@ Kết quả:
 ## 10. Kết luận
 
 POC xác nhận hướng giải pháp hiện tại có tính khả thi cho luồng nghiệp vụ cốt lõi IMS. Các rủi ro còn lại đã được nhận diện và đưa vào backlog/kế hoạch hardening trước giai đoạn nộp cuối kỳ.
+
+## 11. POC source code
+
+Code sản phẩm POC nằm trong thư mục POC. Chạy dev environment theo cách:
+  - Frontend: `npm i`, rồi `npm run dev`
+  - Backend: `./gradlew bootrun`
+Cài đặt môi trường theo như technology stack của project chính trong [05_Architecture.md](./05_Architecture.md)

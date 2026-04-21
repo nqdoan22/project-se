@@ -13,30 +13,30 @@ Prototype đồng bộ 1-1 với PRD, Domain Model, Product Backlog, Architectur
 
 ## 2. Luồng nghiệp vụ được prototype
 
-### 2.1 Luong chinh
+### 2.1 Luồng chinh
 
 ```mermaid
 flowchart LR
-  A[Dang nhap] --> B[Tao Material]
+  A[Đăng nhập] --> B[Tạo Material]
   B --> C[Receive Lot]
-  C --> D[In nhan Raw Material]
+  C --> D[In nhãn Raw Material]
   D --> E[Nhập kết quả QC]
   E --> F{Kết quả QC}
   F -->|All Pass| G[Lot Accepted]
   F -->|Any Fail| H[Lot Rejected]
-  G --> I[Tao Production Batch]
-  I --> J[Them lot vao Batch Components]
-  J --> K[Xac nhan actual usage]
+  G --> I[Tạo Production Batch]
+  I --> J[Thêm lot vào Batch Components]
+  J --> K[Xác nhận actual usage]
   K --> L[Batch Complete]
-  L --> M[In nhan Finished Product]
+  L --> M[In nhãn Finished Product]
 ```
 
-### 2.2 Luong phu
+### 2.2 Luồng phu
 
-- Tach sample lot tu lot cha va in nhan Sample.
-- Adjustment/Transfer/Disposal khi co ngoai le van hanh.
+- Tách sample lot từ lot cha và in nhãn Sample.
+- Adjustment/Transfer/Disposal khi có ngoai lệ vận hành.
 
-## 3. Danh sach man hinh prototype
+## 3. Danh sách màn hình prototype
 
 | Screen ID | Tên màn hình                    | Mục tiêu                                       | Map PRD             |
 | --------- | ------------------------------- | ---------------------------------------------- | ------------------- |
@@ -71,53 +71,53 @@ flowchart LR
 
 ### Validation va behavior
 
-- Bat buoc username va password.
-- Sai thong tin hien thi loi xac thuc.
-- Dang nhap thanh cong dieu huong dashboard theo role.
+- Bắt buộc username va password.
+- Sai thông tin hiển thị lỗi xác thực.
+- Đăng nhập thành công điều hướng dashboard theo role.
 
 ## 4.2 P-02 Material List + Create/Edit
 
 ### UI components
 
-- Bang danh sach materials (part_number, material_name, material_type).
-- Filter: keyword, material_type.
-- Nut Create, Edit.
+- Bảng danh sách materials (`part_number, material_name, material_type`).
+- Filter: keyword, `material_type`.
+- Nút Create, Edit.
 
 ### Form fields
 
-- part_number (required, unique)
-- material_name (required)
-- material_type (required)
-- storage_conditions
-- specification_document
+- `part_number` (required, unique)
+- `material_name` (required)
+- `material_type` (required)
+- `storage_conditions`
+- `specification_document`
 
 ### Acceptance points
 
-- Luu thanh cong tao record moi.
-- Trung part_number thi chan va thong bao conflict.
+- Lưu thành công tạo record mới.
+- Trùng `part_number` thì chặn và thông báo conflict.
 
 ## 4.3 P-03 Receive Lot
 
 ### UI components
 
-- Form tiep nhan lot.
-- Panel xem nhanh thong tin material.
+- Form tiếp nhận lot.
+- Panel xem nhanh thông tin material.
 
 ### Form fields
 
-- material_id (required)
-- lot_code (required)
-- quantity (required, > 0)
-- unit_of_measure (required)
-- received_date (required)
-- expiration_date (required)
-- storage_location
+- `material_id` (required)
+- `lot_code` (required)
+- `quantity` (required, > 0)
+- `unit_of_measure` (required)
+- `received_date` (required)
+- `expiration_date` (required)
+- `storage_location`
 
 ### System behavior
 
-- Tao InventoryLot voi status = Quarantine.
-- Tu dong tao InventoryTransaction type Receipt (+quantity).
-- Hien thong bao tao lot thanh cong.
+- Tạo InventoryLot với status Quarantine.
+- Tự động tạo InventoryTransaction type Receipt (+quantity).
+- Hiện thông báo tạo lot thành công.
 
 ## 4.4 P-04 Raw Label Preview/Print
 
@@ -129,7 +129,7 @@ flowchart LR
 
 ### Data binding
 
-- lot_id, material_name, manufacturer_lot, expiration_date, storage_location.
+- `lot_id, material_name, manufacturer_lot, expiration_date, storage_location`.
 
 ### System behavior
 
@@ -139,25 +139,25 @@ flowchart LR
 
 ### UI components
 
-- Chon lot can test.
+- Chọn lot cần test.
 - Form nhập kết quả QC.
-- Danh sach test da nhap.
+- Danh sách test đã nhập.
 
 ### Form fields
 
-- lot_id (required)
-- test_type (required)
-- test_method (required)
-- test_date (required)
-- result_value
-- acceptance_criteria
-- result_status (Pending/Pass/Fail)
-- performed_by (required)
-- verified_by
+- `lot_id` (required)
+- `test_type` (required)
+- `test_method` (required)
+- `test_date` (required)
+- `result_value`
+- `acceptance_criteria`
+- `result_status` (Pending/Pass/Fail)
+- `performed_by` (required)
+- `verified_by`
 
 ### Existing mockup
 
-- Hinh prototype co san:
+- Hình prototype có sẵn:
 
 ![trang QC](./images/qc.png)
 
@@ -165,13 +165,13 @@ flowchart LR
 
 ### UI components
 
-- Bang tong hop test theo lot.
-- Nut Approve/Reject lot (neu role cho phep).
+- Bảng tổng hợp test theo lot.
+- Nút Approve/Reject lot (nếu role cho phép).
 
 ### Rule hien thi
 
-- Tat ca test Pass -> lot de xuat Accepted.
-- Co it nhat 1 test Fail -> lot de xuat Rejected.
+- Tất cả test Pass -> lot đề xuất Accepted.
+- Có ít nhất 1 test Fail -> lot đề xuất Rejected.
 
 ### System behavior
 
@@ -181,21 +181,21 @@ flowchart LR
 
 ### UI components
 
-- Chon lot cha.
-- Form tach sample quantity.
-- Preview thong tin lot con.
+- Chọn lot cha.
+- Form tách sample quantity.
+- Preview thông tin lot con.
 
 ### Behavior
 
-- Tao lot con is_sample=true, parent_lot_id = lot cha.
+- Tạo lot con `is_sample = true`, `parent_lot_id` = lot cha.
 - Ghi giao dịch tách mẫu (Split/Receipt theo quy tắc hệ thống).
-- Ho tro in nhan Sample.
+- Hỗ trợ in nhãn Sample.
 
 ## 4.8 P-08 Production Batch Create
 
 ### UI components
 
-- Form tao batch.
+- Form tạo batch.
 
 ### Form fields
 
@@ -208,20 +208,20 @@ flowchart LR
 
 ### Behavior
 
-- Tao batch moi o status Planned.
+- Tạo batch mới ở status Planned.
 
 ## 4.9 P-09 Batch Components + Usage
 
 ### UI components
 
-- Chon lot cho batch.
-- Nhap planned_quantity va actual_quantity.
-- Bang components da them.
+- Chọn lot cho batch.
+- Nhập planned_quantity và actual_quantity.
+- Bảng components đã thêm.
 
 ### Rule
 
-- Chi cho chon lot Accepted, con ton, chua het han.
-- Confirm usage tao transaction Usage am.
+- Chỉ cho chọn lot Accepted, còn tồn, chua hết han.
+- Confirm usage tạo transaction Usage.
 
 ### Data update
 
@@ -232,8 +232,8 @@ flowchart LR
 
 ### UI components
 
-- Nut chuyen status batch.
-- Preview nhan Finished Product.
+- Nút chuyển status batch.
+- Preview nhãn Finished Product.
 
 ### Behavior
 
@@ -250,11 +250,11 @@ flowchart LR
 
 ### Existing mockup
 
-- Hinh prototype report co san:
+- Hình prototype report có sẵn:
 
 ![trang report](./images/report%20prototype.png)
 
-## 5. Prototype states va error states
+## 5. Prototype states và error states
 
 - Empty state: chưa có dữ liệu lot/batch.
 - Loading state: đang tải danh sách lot/material.
