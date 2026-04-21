@@ -368,6 +368,10 @@ Jobs trong pipeline:
 
 ---
 
+## 11. Video hướng dẫn biên dịch và chạy hệ thống
+
+https://www.youtube.com/watch?v=s76fi0aILt8
+
 ## 12. Xử lý lỗi thường gặp
 
 | Lỗi                          | Nguyên nhân                | Giải pháp                                                                                                   |
