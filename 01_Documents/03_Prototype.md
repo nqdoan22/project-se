@@ -18,7 +18,9 @@ Prototype đồng bộ 1-1 với PRD, Domain Model, Product Backlog, Architectur
 ```mermaid
 flowchart LR
   A[Đăng nhập] --> B[Tạo Material]
+  A[Đăng nhập] --> B[Tạo Material]
   B --> C[Receive Lot]
+  C --> D[In nhãn Raw Material]
   C --> D[In nhãn Raw Material]
   D --> E[Nhập kết quả QC]
   E --> F{Kết quả QC}
@@ -27,7 +29,11 @@ flowchart LR
   G --> I[Tạo Production Batch]
   I --> J[Thêm lot vào Batch Components]
   J --> K[Xác nhận actual usage]
+  G --> I[Tạo Production Batch]
+  I --> J[Thêm lot vào Batch Components]
+  J --> K[Xác nhận actual usage]
   K --> L[Batch Complete]
+  L --> M[In nhãn Finished Product]
   L --> M[In nhãn Finished Product]
 ```
 
@@ -35,6 +41,8 @@ flowchart LR
 
 - Tách sample lot từ lot cha và in nhãn Sample.
 - Adjustment/Transfer/Disposal khi có ngoại lệ vận hành.
+
+## 3. Danh sách màn hình prototype
 
 ## 3. Danh sách màn hình prototype
 
@@ -85,11 +93,11 @@ flowchart LR
 
 ### Form fields
 
-- part_number (required, unique)
-- material_name (required)
-- material_type (required)
-- storage_conditions
-- specification_document
+- `part_number` (required, unique)
+- `material_name` (required)
+- `material_type` (required)
+- `storage_conditions`
+- `specification_document`
 
 ### Acceptance points
 
@@ -102,16 +110,18 @@ flowchart LR
 
 - Form tiếp nhận lot.
 - Panel xem nhanh thông tin material.
+- Form tiếp nhận lot.
+- Panel xem nhanh thông tin material.
 
 ### Form fields
 
-- material_id (required)
-- lot_code (required)
-- quantity (required, > 0)
-- unit_of_measure (required)
-- received_date (required)
-- expiration_date (required)
-- storage_location
+- `material_id` (required)
+- `lot_code` (required)
+- `quantity` (required, > 0)
+- `unit_of_measure` (required)
+- `received_date` (required)
+- `expiration_date` (required)
+- `storage_location`
 
 ### System behavior
 
@@ -129,7 +139,7 @@ flowchart LR
 
 ### Data binding
 
-- lot_id, material_name, manufacturer_lot, expiration_date, storage_location.
+- `lot_id, material_name, manufacturer_lot, expiration_date, storage_location`.
 
 ### System behavior
 
@@ -140,7 +150,9 @@ flowchart LR
 ### UI components
 
 - Chọn lot cần test.
+- Chọn lot cần test.
 - Form nhập kết quả QC.
+- Danh sách test đã nhập.
 - Danh sách test đã nhập.
 
 ### Form fields
@@ -161,9 +173,13 @@ flowchart LR
 
 - Bảng tổng hợp test theo lot.
 - Nút Approve/Reject lot (nếu role cho phép).
+- Bảng tổng hợp test theo lot.
+- Nút Approve/Reject lot (nếu role cho phép).
 
 ### Rule hiển thị
 
+- Tất cả test Pass -> lot đề xuất Accepted.
+- Có ít nhất 1 test Fail -> lot đề xuất Rejected.
 - Tất cả test Pass -> lot đề xuất Accepted.
 - Có ít nhất 1 test Fail -> lot đề xuất Rejected.
 
@@ -178,17 +194,22 @@ flowchart LR
 - Chọn lot cha.
 - Form tách sample quantity.
 - Preview thông tin lot con.
+- Chọn lot cha.
+- Form tách sample quantity.
+- Preview thông tin lot con.
 
 ### Behavior
 
 - Tạo lot con is_sample=true, parent_lot_id = lot cha.
 - Ghi giao dịch tách mẫu (Split/Receipt theo quy tắc hệ thống).
 - Hỗ trợ in nhãn Sample.
+- Hỗ trợ in nhãn Sample.
 
 ## 4.8 P-08 Production Batch Create
 
 ### UI components
 
+- Form tạo batch.
 - Form tạo batch.
 
 ### Form fields
@@ -203,11 +224,15 @@ flowchart LR
 ### Behavior
 
 - Tạo batch mới ở status Planned.
+- Tạo batch mới ở status Planned.
 
 ## 4.9 P-09 Batch Components + Usage
 
 ### UI components
 
+- Chọn lot cho batch.
+- Nhập planned_quantity và actual_quantity.
+- Bảng components đã thêm.
 - Chọn lot cho batch.
 - Nhập planned_quantity và actual_quantity.
 - Bảng components đã thêm.
@@ -226,6 +251,8 @@ flowchart LR
 
 ### UI components
 
+- Nút chuyển status batch.
+- Preview nhãn Finished Product.
 - Nút chuyển status batch.
 - Preview nhãn Finished Product.
 
