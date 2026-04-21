@@ -13,27 +13,21 @@ Tài liệu này mô tả cách nhóm quản lý dự án IMS gồm:
 
 ## 2.1 Thành viên và vai trò
 
-| STT | Họ tên       | Vai trò chính      | Vai trò phụ          |
-| --- | ------------ | ------------------ | -------------------- |
-| 1   | Nguyễn Văn A | Team Lead, Backend | Architecture         |
-| 2   | Trần Thị B   | Backend            | API and Integration  |
-| 3   | Lê Văn C     | Frontend           | UX and Prototyping   |
-| 4   | Phạm Thị D   | QA                 | Test and Validation  |
-| 5   | Hoàng Văn E  | DevOps             | Deployment and CI/CD |
-
-Ghi chú:
-
-- Tên thành viên có thể cập nhật theo danh sách chính thức của nhóm trước khi nộp cuối kỳ.
+| STT | Mã số sinh viên | Họ tên               | Vai trò                             |
+| --- | --------------- | -------------------- | ----------------------------------- |
+| 1   | 22127467        | Nguyễn Văn Xanh      | Project Manager + Backend developer |
+| 2   | 22127070        | Nguyễn Quang Doãn    | DevOps + Tester                     |
+| 3   | 22127264        | Hoàng Tuý Minh       | Frontend Developer + Tester / QA    |
+| 4   | 20127224        | Dương Đặng Thành Lâm | Technical Writer                    |
 
 ## 2.2 RACI tổng quan
 
-| Công việc              | Lead | Backend | Frontend | QA  | DevOps |
-| ---------------------- | ---- | ------- | -------- | --- | ------ |
-| PRD và Domain          | A    | R       | C        | C   | C      |
-| API và Business rules  | A    | R       | C        | C   | C      |
-| UI và Prototype        | C    | C       | R        | C   | C      |
-| Test và Evaluation     | C    | C       | C        | R   | C      |
-| Deployment và Vận hành | C    | C       | C        | C   | R      |
+| Công việc | Lead | Backend | Frontend | QA | DevOps |
+| PRD và Domain | A | R | C | C | C |
+| API và Business rules | A | R | C | C | C |
+| UI và Prototype | C | C | R | C | C |
+| Test và Evaluation | C | C | C | R | C |
+| Deployment và Vận hành | C | C | C | C | R |
 
 Ký hiệu:
 
@@ -62,7 +56,7 @@ Ký hiệu:
 
 ## 4.2 Ước lượng effort
 
-- Số thành viên tham gia: 5.
+- Số thành viên tham gia: 4.
 - Năng suất trung bình: 10-12 story points/sprint.
 - Số sprint dự kiến: 8-10 sprint.
 
@@ -90,36 +84,7 @@ Ký hiệu:
 - Definition of Done thống nhất với Product Backlog.
 - Mọi thay đổi quan trọng phải cập nhật tài liệu liên quan.
 
-## 7. Team building
-
-- Link video buổi team building:
-  - https://www.youtube.com/watch?v=IMS_TEAM_BUILDING_VIDEO_ID
-
-## 8. Hệ thống giao tiếp nội bộ
-
-- Nền tảng đề xuất: Discord hoặc Slack.
-- Link hệ thống:
-  - https://discord.com/channels/IMS_TEAM_WORKSPACE
-- Minh chứng mời giảng viên vào hệ thống:
-  - Ảnh chụp màn hình: 01_Documents/images/invite-communication-admin.png
-
-## 9. Hệ thống quản lý dự án
-
-- Nền tảng đề xuất: Jira hoặc Trello.
-- Link hệ thống:
-  - https://trello.com/b/IMS_PROJECT_BOARD
-- Minh chứng mời giảng viên:
-  - Ảnh chụp màn hình: 01_Documents/images/invite-project-management-admin.png
-
-## 10. Hệ thống quản lý lỗi
-
-- Nền tảng đề xuất: GitHub Issues.
-- Link hệ thống:
-  - https://github.com/nqdoan22/project-se/issues
-- Minh chứng mời giảng viên:
-  - Ảnh chụp màn hình: 01_Documents/images/invite-issue-tracker-admin.png
-
-## 11. Risk management
+## 7. Risk management
 
 | Risk                          | Ảnh hưởng  | Xác suất   | Giải pháp                |
 | ----------------------------- | ---------- | ---------- | ------------------------ |
@@ -128,7 +93,7 @@ Ký hiệu:
 | Lỗi RBAC và IAM               | Cao        | Trung bình | Test role matrix định kỳ |
 | Hiệu năng report dữ liệu lớn  | Trung bình | Trung bình | Tối ưu query và index    |
 
-## 12. Truyền thông và báo cáo
+## 8. Truyền thông và báo cáo
 
 - Báo cáo tiến độ hằng tuần với format:
   - Đã hoàn thành
@@ -136,14 +101,9 @@ Ký hiệu:
   - Blockers
   - Kế hoạch tuần tới
 
-## 13. Traceability với tài liệu khác
+## 9. Traceability với tài liệu khác
 
 - PRD: business goals và requirements.
 - Product Backlog: implementation scope và release plan.
 - System Evaluation: kết quả kiểm thử và validation.
 - Deployment/User Guide: khả năng vận hành và sử dụng.
-
-## 14. Ghi chú nộp bài
-
-- Toàn bộ link và ảnh minh chứng cần được cập nhật bằng dữ liệu thực tế của nhóm trước khi nộp cuối kỳ.
-- Nếu nhóm chia điểm theo tỷ lệ riêng, thông tin phải được đặt nhất quán trên trang bìa tất cả sản phẩm.

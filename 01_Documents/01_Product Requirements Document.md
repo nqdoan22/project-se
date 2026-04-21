@@ -42,7 +42,7 @@ Doanh nghiệp sản xuất cần kiểm soát vòng đời vật tư theo lô, 
   - Quản lý tập trung master data và cấu hình hệ thống.
   - Đảm bảo phân quyền rõ ràng theo vai trò.
 
-### 3.2 Warehouse Operator
+### 3.2 Operator (Kho vận)
 
 - Vấn đề hiện tại:
   - Nhập/xuất kho theo lô ghi nhận rời rạc, khó đối chiếu tồn thực tế và tồn hệ thống.
@@ -50,7 +50,7 @@ Doanh nghiệp sản xuất cần kiểm soát vòng đời vật tư theo lô, 
   - Ghi nhận nhanh, đúng và đủ các giao dịch Receipt/Usage/Split/Adjustment/Transfer/Disposal.
   - Luôn biết lô nào có thể dùng cho sản xuất.
 
-### 3.3 QC Staff / QC Approver
+### 3.3 QC
 
 - Vấn đề hiện tại:
   - Kết quả kiểm nghiệm chưa liên kết chặt với trạng thái lot, gây rủi ro cấp phát nhầm lô.
@@ -58,7 +58,7 @@ Doanh nghiệp sản xuất cần kiểm soát vòng đời vật tư theo lô, 
   - Quản lý kết quả kiểm nghiệm theo từng lot.
   - Tự động kiểm soát trạng thái Quarantine/Accepted/Rejected theo rule nghiệp vụ.
 
-### 3.4 Production Operator / Production Manager
+### 3.4 Manager/Operator (Sản xuất)
 
 - Vấn đề hiện tại:
   - Cấp phát nguyên liệu cho batch dễ sai định mức và khó truy xuất lot đã dùng.
@@ -66,7 +66,7 @@ Doanh nghiệp sản xuất cần kiểm soát vòng đời vật tư theo lô, 
   - Tạo và quản lý production batch có đầy đủ thành phần nguyên liệu.
   - Tự động trừ tồn theo actual usage, có traceability đầy đủ.
 
-### 3.5 QA/Compliance/Manager
+### 3.5 Manager (Chất lượng và tuân thủ)
 
 - Vấn đề hiện tại:
   - Mất thời gian tổng hợp lịch sử biến động để điều tra sai lệch/chất lượng.
@@ -117,16 +117,16 @@ flowchart LR
 
 ### 7.1 Luồng chính: Từ nhập kho đến hoàn tất sản xuất
 
-1. Warehouse Operator nhận vật tư và kiểm tra chứng từ (thủ công).
+1. Operator nhận vật tư và kiểm tra chứng từ (thủ công).
 2. Operator tạo Inventory Lot trên hệ thống với trạng thái Quarantine.
 3. Hệ thống ghi Receipt transaction và cập nhật tồn.
 4. Operator in nhãn Raw Material để dán lô vật lý.
 5. QC thực hiện kiểm nghiệm (một phần thủ công ở phòng lab, một phần nhập liệu lên hệ thống).
-6. QC/Approver cập nhật kết quả; hệ thống tự động đổi trạng thái lot:
+6. QC/Manager cập nhật kết quả; hệ thống tự động đổi trạng thái lot:
    - All pass: Accepted.
    - Có fail: Rejected.
-7. Production tạo batch cho sản phẩm mục tiêu.
-8. Production thêm lot hợp lệ vào batch và nhập actual usage.
+7. Manager/Operator tạo batch cho sản phẩm mục tiêu.
+8. Manager/Operator thêm lot hợp lệ vào batch và nhập actual usage.
 9. Hệ thống tạo Usage transaction, trừ tồn lot và kiểm tra depleted.
 10. Batch chuyển Complete khi đủ điều kiện; in nhãn Finished Product.
 

@@ -27,7 +27,6 @@ Replace the existing `docker-compose.yml` with the following full production ver
 
 ```yaml
 services:
-
   # ── Keycloak database ────────────────────────────────────────────────────────
   postgres:
     image: postgres:16
@@ -49,12 +48,12 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak_pass
-      KC_HOSTNAME: localhost          # change to your domain in real prod
-      KC_HTTP_ENABLED: "true"         # set to false if using HTTPS
+      KC_HOSTNAME: localhost # change to your domain in real prod
+      KC_HTTP_ENABLED: "true" # set to false if using HTTPS
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin  # CHANGE THIS in real production
+      KEYCLOAK_ADMIN_PASSWORD: admin # CHANGE THIS in real production
     ports:
       - "9090:8080"
     depends_on:
@@ -120,13 +119,13 @@ Create `backend/Dockerfile`:
 
 ```dockerfile
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM eclipse-temurin:17-jdk AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 COPY . .
 RUN ./gradlew bootJar -x test
 
 # ── Run stage ─────────────────────────────────────────────────────────────────
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 EXPOSE 8080
@@ -180,6 +179,7 @@ docker compose ps
 ```
 
 Expected output:
+
 ```
 NAME         STATUS
 postgres     Up
@@ -201,6 +201,7 @@ docker compose logs mysql --tail=50
 ## Step 5: Configure Keycloak (first-time only)
 
 Once Keycloak is running, follow `05_Keycloak Setup Guide.md` to:
+
 1. Create realm `ims`
 2. Create client `ims-frontend`
 3. Create 5 realm roles
@@ -253,17 +254,17 @@ Expected: **401 Unauthorized**
 
 ### 6e. Test role-based access
 
-Get a token for `viewer1` (Viewer role) and try a protected endpoint:
+Get a token for `operator1` (Operator role) and try a protected endpoint:
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:9090/realms/ims/protocol/openid-connect/token \
-  -d "grant_type=password&client_id=ims-frontend&username=viewer1&password=Admin@123" \
+  -d "grant_type=password&client_id=ims-frontend&username=operator1&password=Admin@123" \
   | jq -r .access_token)
 
-# Should work (isAuthenticated)
+# Should work for read endpoint
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/batches
 
-# Should return 403 (requires Admin or Production role)
+# Should return 403 for endpoints restricted to Manager/Admin
 curl -s -o /dev/null -w "%{http_code}" \
   -X POST http://localhost:8080/api/v1/batches \
   -H "Authorization: Bearer $TOKEN" \
@@ -275,13 +276,13 @@ curl -s -o /dev/null -w "%{http_code}" \
 
 ## Common Issues
 
-| Problem | Cause | Fix |
-|---|---|---|
-| Backend fails to start | Keycloak not ready yet | Add `restart: on-failure` to backend service or wait and retry |
-| `401` on all requests | Wrong `issuer-uri` — JWT `iss` doesn't match | Make sure `KC_HOSTNAME` in Keycloak matches `KEYCLOAK_ISSUER_URI` in backend |
-| `403` for valid user | Role not assigned in Keycloak | Go to Keycloak admin → Users → Role mapping |
-| Keycloak data lost on restart | Using `start-dev` (in-memory DB) | Use `start` command with Postgres volume (this guide already does this) |
-| Backend can't reach Keycloak JWK | Wrong internal URL | Use `http://keycloak:8080` (Docker service name), not `localhost` |
+| Problem                          | Cause                                        | Fix                                                                          |
+| -------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------- |
+| Backend fails to start           | Keycloak not ready yet                       | Add `restart: on-failure` to backend service or wait and retry               |
+| `401` on all requests            | Wrong `issuer-uri` — JWT `iss` doesn't match | Make sure `KC_HOSTNAME` in Keycloak matches `KEYCLOAK_ISSUER_URI` in backend |
+| `403` for valid user             | Role not assigned in Keycloak                | Go to Keycloak admin → Users → Role mapping                                  |
+| Keycloak data lost on restart    | Using `start-dev` (in-memory DB)             | Use `start` command with Postgres volume (this guide already does this)      |
+| Backend can't reach Keycloak JWK | Wrong internal URL                           | Use `http://keycloak:8080` (Docker service name), not `localhost`            |
 
 ---
 

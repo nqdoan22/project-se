@@ -1,0 +1,97 @@
+services:
+  # ── Keycloak (IAM) ───────────────────────────────────────────────────────────
+  # Production: dùng start (không dùng start-dev) với PostgreSQL backend.
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_HOSTNAME: ${KC_HOSTNAME}           # domain name hoặc IP public
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KEYCLOAK_ADMIN: ${KC_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+    ports:
+      - "9090:8080"
+    depends_on:
+      - postgres
+    networks:
+      - internal
+      - external
+    restart: unless-stopped
+
+  # ── Backend (Spring Boot) ────────────────────────────────────────────────────
+  # Trong production thực, backend có thể deploy riêng trên Render.
+  # File này dùng cho self-hosted hoặc staging trên một server.
+  backend:
+    build:
+      context: ../../02_Source/01_Source\ Code/backend
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_JDBC_URL: ${DB_JDBC_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      KEYCLOAK_ISSUER_URI: http://${KC_HOSTNAME}:9090/realms/ims
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ims/protocol/openid-connect/certs
+      QDRANT_HOST: ${QDRANT_HOST}
+      QDRANT_API_KEY: ${QDRANT_API_KEY}
+      QDRANT_COLLECTION: ims_rag
+      QDRANT_USE_TLS: "true"
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_EMBEDDING_MODEL: text-embedding-3-small
+      OPENAI_CHAT_MODEL: gpt-4o-mini
+      RAG_SYNC_ENABLED: "true"
+      RAG_SYNC_INTERVAL_MS: "60000"
+      RAG_SYNC_BATCH_SIZE: "500"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - keycloak
+    networks:
+      - internal
+      - external
+    restart: unless-stopped
+
+  # ── Frontend (React + nginx) ─────────────────────────────────────────────────
+  # Trong production thực, frontend deploy trên Vercel.
+  # Container này dùng cho self-hosted hoặc staging.
+  frontend:
+    build:
+      context: ../../02_Source/01_Source\ Code/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: http://${KC_HOSTNAME}:8080/api/v1
+        VITE_KEYCLOAK_URL: http://${KC_HOSTNAME}:9090
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - external
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:
+    driver: bridge
+  external:
+    driver: bridge

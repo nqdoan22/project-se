@@ -211,12 +211,7 @@ Kết luận so sánh:
 - Hệ thống nhóm đáp ứng tốt luồng cốt lõi và traceability.
 - Cần tiếp tục nâng cấp tính năng vận hành nâng cao và tối ưu hiệu năng report.
 
-## 12. Video minh chứng
-
-- Link video cài đặt công cụ test + thực thi test + kết quả:
-  - https://www.youtube.com/watch?v=IMS_TEST_DEMO_2026
-
-## 13. Traceability 1-1 với PRD
+## 12. Traceability 1-1 với PRD
 
 | PRD item | Minh chứng trong đánh giá             |
 | -------- | ------------------------------------- |
@@ -235,6 +230,6 @@ Kết luận so sánh:
 | NFR-03   | Reliability/data integrity checks     |
 | NFR-04   | Compliance reporting and traceability |
 
-## 14. Kết luận
+## 13. Kết luận
 
 Hệ thống đã đạt mục tiêu cho luồng nghiệp vụ cốt lõi theo PRD, đặc biệt ở nhập kho theo lot, QC gắn trạng thái lot, usage cho production và truy xuất lot-batch. Các vấn đề tồn đọng chủ yếu tập trung vào tối ưu hiệu năng report lớn và củng cố xử lý concurrent usage.

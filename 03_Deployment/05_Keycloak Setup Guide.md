@@ -27,28 +27,28 @@ Login with **admin / admin**
 1. Go to **Clients** → **Create client**
 2. Fill in:
 
-| Field | Value |
-|---|---|
-| Client ID | `ims-frontend` |
+| Field       | Value            |
+| ----------- | ---------------- |
+| Client ID   | `ims-frontend`   |
 | Client type | `OpenID Connect` |
 
 3. Click **Next**
 4. Set:
 
-| Field | Value |
-|---|---|
+| Field                 | Value                   |
+| --------------------- | ----------------------- |
 | Client authentication | **OFF** (public client) |
-| Standard flow | ON |
-| Direct access grants | ON |
+| Standard flow         | ON                      |
+| Direct access grants  | ON                      |
 
 5. Click **Next**
 6. Set:
 
-| Field | Value |
-|---|---|
-| Valid redirect URIs | `http://localhost:5173/*` |
+| Field                           | Value                     |
+| ------------------------------- | ------------------------- |
+| Valid redirect URIs             | `http://localhost:5173/*` |
 | Valid post-logout redirect URIs | `http://localhost:5173/*` |
-| Web origins | `http://localhost:5173` |
+| Web origins                     | `http://localhost:5173`   |
 
 7. Click **Save**
 
@@ -56,31 +56,30 @@ Login with **admin / admin**
 
 ## Step 4: Create Realm Roles
 
-Go to **Realm roles** → **Create role** (repeat 5 times):
+Go to **Realm roles** → **Create role** (repeat 4 times):
 
 - `Admin`
-- `InventoryManager`
-- `QualityControl`
-- `Production`
-- `Viewer`
+- `Manager`
+- `QC`
+- `Operator`
 
 ---
 
 ## Step 5: Create Users & Assign Roles
 
 For each user:
+
 1. Go to **Users** → **Add user**
 2. Set **Username** → **Create**
 3. Go to **Credentials** tab → **Set password** → enter password → turn **Temporary** OFF → **Save**
 4. Go to **Role mapping** tab → **Assign role** → select the role → **Assign**
 
-| Username | Password | Role |
-|---|---|---|
-| `admin` | `Admin@123` | `Admin` |
-| `inv_manager` | `Admin@123` | `InventoryManager` |
-| `qc_analyst` | `Admin@123` | `QualityControl` |
-| `prod_operator` | `Admin@123` | `Production` |
-| `viewer1` | `Admin@123` | `Viewer` |
+| Username    | Password    | Role       |
+| ----------- | ----------- | ---------- |
+| `admin`     | `Admin@123` | `Admin`    |
+| `manager1`  | `Admin@123` | `Manager`  |
+| `qc1`       | `Admin@123` | `QC`       |
+| `operator1` | `Admin@123` | `Operator` |
 
 ---
 

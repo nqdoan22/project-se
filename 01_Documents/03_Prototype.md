@@ -13,30 +13,30 @@ Prototype đồng bộ 1-1 với PRD, Domain Model, Product Backlog, Architectur
 
 ## 2. Luồng nghiệp vụ được prototype
 
-### 2.1 Luong chinh
+### 2.1 Luồng chính
 
 ```mermaid
 flowchart LR
-  A[Dang nhap] --> B[Tao Material]
+  A[Đăng nhập] --> B[Tạo Material]
   B --> C[Receive Lot]
-  C --> D[In nhan Raw Material]
+  C --> D[In nhãn Raw Material]
   D --> E[Nhập kết quả QC]
   E --> F{Kết quả QC}
   F -->|All Pass| G[Lot Accepted]
   F -->|Any Fail| H[Lot Rejected]
-  G --> I[Tao Production Batch]
-  I --> J[Them lot vao Batch Components]
-  J --> K[Xac nhan actual usage]
+  G --> I[Tạo Production Batch]
+  I --> J[Thêm lot vào Batch Components]
+  J --> K[Xác nhận actual usage]
   K --> L[Batch Complete]
-  L --> M[In nhan Finished Product]
+  L --> M[In nhãn Finished Product]
 ```
 
-### 2.2 Luong phu
+### 2.2 Luồng phụ
 
-- Tach sample lot tu lot cha va in nhan Sample.
-- Adjustment/Transfer/Disposal khi co ngoai le van hanh.
+- Tách sample lot từ lot cha và in nhãn Sample.
+- Adjustment/Transfer/Disposal khi có ngoại lệ vận hành.
 
-## 3. Danh sach man hinh prototype
+## 3. Danh sách màn hình prototype
 
 | Screen ID | Tên màn hình                    | Mục tiêu                                       | Map PRD             |
 | --------- | ------------------------------- | ---------------------------------------------- | ------------------- |
@@ -52,11 +52,11 @@ flowchart LR
 | P-10      | Batch Complete + Finished Label | Chuyển Complete và in nhãn thành phẩm          | FR-05, FR-08, BR-05 |
 | P-11      | Traceability Report             | Truy xuất lot -> transaction -> batch          | FR-09, FR-10        |
 
-## 4. Chi tiet prototype theo tung man hinh
+## 4. Chi tiết prototype theo từng màn hình
 
 ## 4.1 P-01 Login
 
-### User role
+### User roles
 
 - Admin
 - Manager
@@ -69,19 +69,19 @@ flowchart LR
 - Password
 - Login button
 
-### Validation va behavior
+### Validation và behavior
 
-- Bat buoc username va password.
-- Sai thong tin hien thi loi xac thuc.
-- Dang nhap thanh cong dieu huong dashboard theo role.
+- Bắt buộc username và password.
+- Sai thông tin hiển thị lỗi xác thực.
+- Đăng nhập thành công điều hướng dashboard theo role.
 
 ## 4.2 P-02 Material List + Create/Edit
 
 ### UI components
 
-- Bang danh sach materials (part_number, material_name, material_type).
+- Bảng danh sách materials (part_number, material_name, material_type).
 - Filter: keyword, material_type.
-- Nut Create, Edit.
+- Nút Create, Edit.
 
 ### Form fields
 
@@ -93,15 +93,15 @@ flowchart LR
 
 ### Acceptance points
 
-- Luu thanh cong tao record moi.
-- Trung part_number thi chan va thong bao conflict.
+- Lưu thành công tạo record mới.
+- Trùng part_number thì chặn và thông báo conflict.
 
 ## 4.3 P-03 Receive Lot
 
 ### UI components
 
-- Form tiep nhan lot.
-- Panel xem nhanh thong tin material.
+- Form tiếp nhận lot.
+- Panel xem nhanh thông tin material.
 
 ### Form fields
 
@@ -115,9 +115,9 @@ flowchart LR
 
 ### System behavior
 
-- Tao InventoryLot voi status = Quarantine.
-- Tu dong tao InventoryTransaction type Receipt (+quantity).
-- Hien thong bao tao lot thanh cong.
+- Tạo InventoryLot với status = Quarantine.
+- Tự động tạo InventoryTransaction type Receipt (+quantity).
+- Hiện thông báo tạo lot thành công.
 
 ## 4.4 P-04 Raw Label Preview/Print
 
@@ -139,9 +139,9 @@ flowchart LR
 
 ### UI components
 
-- Chon lot can test.
+- Chọn lot cần test.
 - Form nhập kết quả QC.
-- Danh sach test da nhap.
+- Danh sách test đã nhập.
 
 ### Form fields
 
@@ -155,23 +155,17 @@ flowchart LR
 - performed_by (required)
 - verified_by
 
-### Existing mockup
-
-- Hinh prototype co san:
-
-![trang QC](./images/qc.png)
-
 ## 4.6 P-06 QC Approval Result
 
 ### UI components
 
-- Bang tong hop test theo lot.
-- Nut Approve/Reject lot (neu role cho phep).
+- Bảng tổng hợp test theo lot.
+- Nút Approve/Reject lot (nếu role cho phép).
 
-### Rule hien thi
+### Rule hiển thị
 
-- Tat ca test Pass -> lot de xuat Accepted.
-- Co it nhat 1 test Fail -> lot de xuat Rejected.
+- Tất cả test Pass -> lot đề xuất Accepted.
+- Có ít nhất 1 test Fail -> lot đề xuất Rejected.
 
 ### System behavior
 
@@ -181,21 +175,21 @@ flowchart LR
 
 ### UI components
 
-- Chon lot cha.
-- Form tach sample quantity.
-- Preview thong tin lot con.
+- Chọn lot cha.
+- Form tách sample quantity.
+- Preview thông tin lot con.
 
 ### Behavior
 
-- Tao lot con is_sample=true, parent_lot_id = lot cha.
+- Tạo lot con is_sample=true, parent_lot_id = lot cha.
 - Ghi giao dịch tách mẫu (Split/Receipt theo quy tắc hệ thống).
-- Ho tro in nhan Sample.
+- Hỗ trợ in nhãn Sample.
 
 ## 4.8 P-08 Production Batch Create
 
 ### UI components
 
-- Form tao batch.
+- Form tạo batch.
 
 ### Form fields
 
@@ -208,20 +202,20 @@ flowchart LR
 
 ### Behavior
 
-- Tao batch moi o status Planned.
+- Tạo batch mới ở status Planned.
 
 ## 4.9 P-09 Batch Components + Usage
 
 ### UI components
 
-- Chon lot cho batch.
-- Nhap planned_quantity va actual_quantity.
-- Bang components da them.
+- Chọn lot cho batch.
+- Nhập planned_quantity và actual_quantity.
+- Bảng components đã thêm.
 
 ### Rule
 
-- Chi cho chon lot Accepted, con ton, chua het han.
-- Confirm usage tao transaction Usage am.
+- Chỉ cho chọn lot Accepted, còn tồn, chưa hết hạn.
+- Confirm usage tạo transaction Usage âm.
 
 ### Data update
 
@@ -232,8 +226,8 @@ flowchart LR
 
 ### UI components
 
-- Nut chuyen status batch.
-- Preview nhan Finished Product.
+- Nút chuyển status batch.
+- Preview nhãn Finished Product.
 
 ### Behavior
 
@@ -248,13 +242,7 @@ flowchart LR
 - Bảng transaction timeline.
 - Tổng hợp KPI cơ bản.
 
-### Existing mockup
-
-- Hinh prototype report co san:
-
-![trang report](./images/report%20prototype.png)
-
-## 5. Prototype states va error states
+## 5. Prototype states và error states
 
 - Empty state: chưa có dữ liệu lot/batch.
 - Loading state: đang tải danh sách lot/material.
@@ -265,9 +253,9 @@ flowchart LR
   - Không được Complete batch nếu chưa đủ điều kiện.
 - Permission denied state: role không đủ quyền thao tác.
 
-## 6. Traceability 1-1 voi PRD
+## 6. Traceability 1-1 với PRD
 
-| PRD   | Prototype Screen                               |
+| PRD   | Màn hình prototype                             |
 | ----- | ---------------------------------------------- |
 | FR-01 | P-01                                           |
 | FR-02 | P-02                                           |
